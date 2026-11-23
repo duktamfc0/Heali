@@ -1,0 +1,6 @@
+{
+  "name": "Heali – Góc nhỏ cho những tâm hồn trót vỡ đôi",
+  "description": "Không gian an trú cảm xúc dịu êm dành cho những tâm hồn tổn thương, cô đơn, tan vỡ hoặc gặp trắc trở tình cảm. Thả hoa đăng, viết nhật ký cảm xúc, gửi lá thư chưa gửi và lắng nghe thanh âm chữa lành.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

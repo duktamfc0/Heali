@@ -1,0 +1,1055 @@
+# HEALI WORLD — PREMIUM 3D ENVIRONMENT OVERHAUL
+## Creative Direction: Cinematic Dreamscape, Living Environments, Beautiful Interactive Places
+
+You are a world-class 3D environment artist, creative director, technical artist, interactive world designer, and senior Three.js / React Three Fiber developer.
+
+Your assignment is to dramatically improve the **existing Heali application** into a visually exceptional, emotionally immersive, explorable 3D world.
+
+**This is a real production implementation task, not a concept document.**
+
+The application already contains a basic 3D world, simple houses, floating characters, a dock, a camera system, and navigation controls.
+
+However, the current world looks like an early gray-box prototype:
+- Buildings are basic geometric blocks.
+- The terrain is flat and visually empty.
+- The water is not convincing.
+- Lighting lacks depth, warmth, and artistic direction.
+- The characters look like simple abstract objects.
+- Environmental details are missing.
+- Individual functional destinations do not have fully designed 3D interiors.
+- Entering a destination does not yet feel like entering a beautiful, distinct place.
+
+**Your primary mission is to replace this prototype-level environmental quality with a cohesive, visually rich, premium stylized 3D world.**
+
+Do not rebuild the application from scratch. Preserve the existing project, its functionality, application data, and the original purpose of Heali.
+
+---
+
+# PART 1 — NON-NEGOTIABLE PRODUCT IDENTITY
+
+Heali — Góc nhỏ cho những tâm hồn trót vỡ đôi
+
+Heali is a Vietnamese emotional-wellness application dedicated to heartbreak, emotional expression, self-reflection, relationships, loneliness, friendship, family difficulties, and compassionate connection.
+
+Existing features must remain intact:
+- Anonymous emotional-sharing community
+- Private emotional journal
+- Unsent letters
+- Floating lantern experience
+- Wishes and personal intentions
+- Healing garden
+- Relaxing audio and podcasts
+- AI emotional companion
+- Optional anonymous conversations
+- Personal user profiles
+- Privacy and moderation
+
+The entire 3D world must support these original features.
+
+The design concept is a **dreamy virtual world for emotional reflection and human connection**.
+
+It is NOT a religious environment.
+
+Do not add:
+- Pagodas
+- Temples
+- Altars
+- Buddha statues
+- Religious iconography
+- Religious prayers
+- Worship mechanics
+
+The inspiration from virtual-world websites applies ONLY to 3D graphics, character movement, interactive locations, camera control, and exploration.
+
+Heali must have its own original artistic identity.
+
+---
+
+# PART 2 — THE VISUAL QUALITY TARGET
+
+## 2.1 Art Direction
+
+Visual theme:
+
+**Cinematic Cozy Dreamscape — A Living World Between Moonlight and Warmth**
+
+Combine:
+- Beautiful stylized 3D environments
+- Painterly colors and carefully crafted textures
+- Dreamy natural landscapes
+- Soft cinematic lighting
+- Elegant stylized architecture
+- Sophisticated environmental storytelling
+- Rich but tasteful detail
+- Subtle, realistic-looking motion
+- A peaceful emotional atmosphere
+
+The final quality should feel closer to a lovingly handcrafted premium exploration game than a generic 3D website.
+
+Avoid an excessively childish cartoon appearance.
+
+Avoid generic primitive low-poly geometry with untextured flat surfaces.
+
+Avoid random visual assets that do not match one another.
+
+Avoid excessive glowing neon objects.
+
+Instead, create believable, inviting, beautiful spaces with a consistent visual language.
+
+## 2.2 Color Palette
+
+Use a carefully balanced palette:
+
+Midnight sky:
+#11172F
+
+Deep indigo:
+#24294E
+
+Twilight violet:
+#51436C
+
+Moonlit blue:
+#A7C8DD
+
+Lavender mist:
+#C3B2DC
+
+Dusty pink:
+#E6B4C8
+
+Warm interior gold:
+#F8D6A2
+
+Soft forest green:
+#778D80
+
+Warm stone:
+#BBB1AB
+
+Cream white:
+#F4EAE5
+
+Use richer natural colors and material variation throughout the scene.
+
+Do not make every surface the same shade of purple.
+
+Create contrast between the cool, peaceful outdoor atmosphere and the warm, safe interior spaces.
+
+## 2.3 Art Quality Requirements
+
+Use proper materials, texturing, geometry detail, and lighting.
+
+Where technically appropriate:
+- PBR materials
+- Soft roughness variation
+- Normal maps
+- Ambient occlusion
+- Baked ambient lighting
+- Contact shadows
+- Soft directional moonlight
+- Warm interior lighting
+- Subtle bloom
+- Atmospheric depth
+- Environment reflections
+- Fog
+- Detailed vegetation
+- Organic path and terrain geometry
+
+Prefer high-quality optimized GLB/GLTF assets where assets can be legally sourced and imported.
+
+Use original or properly licensed assets with documented attribution requirements.
+
+Do not hotlink unreliable 3D asset URLs.
+
+If asset downloading is unavailable, create original detailed procedural geometry with carefully designed proportions, materials, silhouettes, and decoration rather than leaving simple cubes as finished buildings.
+
+Do not claim assets were imported unless they genuinely exist in the project.
+
+---
+
+# PART 3 — CREATE A COMPLETE 3D HEALI ISLAND
+
+## 3.1 World Concept
+
+The main setting is a peaceful, dreamlike island surrounded by a calm lake and distant mountains.
+
+Working title:
+
+**Heali Island — Hòn Đảo Dịu Êm**
+
+Create a connected outdoor world with naturally arranged areas.
+
+The island should feel like a real place designed by a professional environment artist.
+
+The landscape should contain:
+
+- A beautiful central lake
+- A curved waterfront promenade
+- A wooden pedestrian bridge
+- A small dock extending over the water
+- Several cozy architecture pieces
+- Rolling grassy hills
+- Gently sloping terrain
+- Curving stone pathways
+- Blooming flower gardens
+- Tall trees with expressive canopies
+- Weeping willow trees near the water
+- Flowering pink and lavender trees
+- Tall ornamental grasses
+- Small rocks and natural stone clusters
+- Gentle streams and waterfalls
+- Wooden fences
+- Carefully placed benches
+- Vintage-style garden lights
+- Hanging string lights
+- Decorative windows
+- Softly illuminated signs
+- Distant layered mountains
+- A beautiful moonlit sky
+- Light atmospheric clouds
+- Fireflies
+- Gentle mist near the lake
+
+Buildings should be placed according to a thoughtful world map.
+
+The player should be able to walk naturally between destinations.
+
+Paths must be visibly connected.
+
+No disconnected floating buildings.
+
+No arbitrary geometric platforms that look like unfinished level-design placeholders.
+
+## 3.2 Terrain Design
+
+Replace the existing flat terrain with a real organic landscape.
+
+Requirements:
+- Smooth sculpted terrain
+- Natural changes in elevation
+- Gentle slopes
+- Hills and valleys
+- Proper shoreline geometry
+- Different ground materials
+- Blended areas of grass, soil, stone, and pathways
+- Natural vegetation distribution
+- Appropriate collision for walking
+
+Terrain should have enough visual variation to remain attractive from both distant and close camera positions.
+
+Use optimized mesh geometry and texture variation.
+
+Do not make the entire ground a single flat purple plane.
+
+## 3.3 Lake and Water
+
+The lake is one of the visual signatures of Heali.
+
+Create a beautiful water surface with:
+- Soft flowing movement
+- Subtle normal-map distortion
+- Moonlight reflections
+- Reflections of nearby warm lights
+- Gentle shoreline ripples
+- Floating leaves or petals
+- Floating lanterns
+- Atmospheric light scattering where feasible
+- A clear contrast between water, shoreline, and sky
+
+The water must look like a carefully designed lake, not a flat opaque plane.
+
+If screen-space reflections are too expensive, use optimized stylized reflection techniques.
+
+Avoid expensive water shaders on low-end devices.
+
+## 3.4 Sky and Atmosphere
+
+Create a layered night sky:
+- Beautiful moon with a soft halo
+- Atmospheric gradient
+- Distinct distant horizon
+- Scattered, nonuniform stars
+- Subtle drifting cloud formations
+- Gentle atmospheric haze
+- Distant mountain silhouettes
+- Depth between foreground, midground, and background
+
+The sky must not look like a flat black background.
+
+Design the atmosphere for a feeling of quiet wonder, not darkness or horror.
+
+---
+
+# PART 4 — SEVEN BEAUTIFUL 3D DESTINATIONS
+
+**Critical requirement: each major location needs a genuinely designed 3D exterior AND an explorable or camera-navigable 3D interior.**
+
+A decorative building that only opens a plain modal does NOT satisfy this requirement.
+
+Existing forms and application functionality can appear as accessible 2D interfaces integrated within the 3D interiors.
+
+## LOCATION 01 — HỒ HOA ĐĂNG
+### The Moonlight Lake
+
+Visual identity: Peaceful, romantic, mysterious, intimate.
+
+Exterior:
+- A curved wooden dock with detailed timber construction
+- Wooden railings and decorative posts
+- Soft lanterns along the walkway
+- Willow trees leaning toward the water
+- Small pink flower clusters around the shore
+- A comfortable bench
+- Gently moving grass
+- A beautiful distant horizon
+- Water reflecting moonlight
+- Carefully animated floating lanterns
+
+Create a stunning visual composition from the dock.
+
+The player should be able to walk onto the dock and sit near the water.
+
+Interaction:
+1. Approach the lantern release point.
+2. Display an elegant contextual interaction hint.
+3. Show a 3D lantern at close range.
+4. Open the writing interface.
+5. Allow the user to write a private thought.
+6. Confirm the action.
+7. Animate the lantern being released onto the lake.
+8. The lantern floats naturally away while creating subtle ripples.
+
+Use a cinematic yet optional camera movement during the release.
+
+Return control to the player afterward.
+
+Never frame the lantern activity as a religious ritual.
+
+## LOCATION 02 — NGÔI NHÀ NHẬT KÝ
+### The Little House of Memories
+
+Visual identity: Safe, personal, nostalgic, warm.
+
+Exterior:
+- A charming timber cottage
+- Asymmetric curved or sloped roof
+- Beautifully framed windows
+- Climbing flowers
+- Stone pathway
+- Warm glowing interior light
+- Flower pots
+- Wooden steps
+- A small garden bench
+- Carefully modeled door and porch
+
+Interior:
+- Wooden floorboards
+- Soft plaster walls
+- Wooden ceiling beams
+- Bookshelves
+- A beautiful writing desk
+- A chair facing a window
+- Table lamp
+- Small decorative objects
+- Indoor plants
+- Notebook and pen
+- Framed landscapes
+- Curtains
+- Soft warm lighting
+- Subtle dust particles in beams of light
+
+The player enters the cottage through an actual doorway interaction.
+
+Inside, provide a separate 3D camera composition of the room.
+
+The avatar can walk to the desk.
+
+When the user interacts with the notebook:
+- Move the camera smoothly toward the desk.
+- Show the private journal interface.
+- Support mood tracking.
+- Support creating, saving, and reading past journal entries.
+
+Keep all journal data private.
+
+The room should communicate safety and personal comfort.
+
+## LOCATION 03 — BƯU ĐIỆN KÝ ỨC
+### The House of Unsent Letters
+
+Visual identity: Nostalgic, poetic, gently melancholic.
+
+Exterior:
+- A small vintage-inspired post office
+- Charming wooden entrance
+- Detailed roof and windows
+- Decorative hanging sign
+- Climbing vines
+- A weathered mailbox
+- Soft garden lighting
+- Flower-lined path
+- Old-fashioned wooden details
+
+Interior:
+- Writing tables
+- Paper stacks
+- Letter shelves
+- Envelopes
+- Wooden drawers
+- Vintage desk lamps
+- A typewriter-like decorative object
+- Soft curtains
+- Warm sunlight or moonlight through windows
+- Carefully designed stationery
+- A beautiful central writing desk
+
+User experience:
+- Enter the building.
+- Approach the writing desk.
+- Sit or trigger an appropriate writing camera.
+- Open the unsent-letter editor.
+- Save a private draft.
+- Revisit saved letters.
+- Optionally release a symbolic paper animation.
+
+Never send messages to another person without explicit user action.
+
+This location must feel like a real little post office full of untold stories.
+
+## LOCATION 04 — KHU VƯỜN TÂM TÌNH
+### The Garden of Shared Stories
+
+Visual identity: Welcoming, gentle, alive, emotionally safe.
+
+Outdoor environment:
+- A beautiful garden square
+- Curved stone paths
+- Flower beds
+- Comfortable benches
+- Flowering trees
+- A covered wooden pavilion
+- Hanging decorative lights
+- Subtle fountains or flowing water
+- Decorative climbing vines
+- Atmospheric fireflies
+- Small quiet conversation corners
+
+Create a memorable central gathering area.
+
+The environment should not look like a generic chat room.
+
+Interaction:
+- Walk to the pavilion.
+- Sit on a bench.
+- Approach a story board or bookstand.
+- Open the anonymous confession feed.
+- Read posts.
+- Share personal stories.
+- React empathetically.
+- Leave supportive comments.
+- Access reporting and blocking controls.
+
+Display user-generated posts only when they actually exist.
+
+Use clearly labeled sample data only for development mode.
+
+The garden may contain clearly identified ambient NPCs, but must not pretend they are real online visitors.
+
+## LOCATION 05 — CÂY ƯỚC NGUYỆN
+### The Garden of Wishes
+
+Visual identity: Dreamy, hopeful, luminous, organic.
+
+Create the most visually iconic tree in the entire world.
+
+The wish tree should have:
+- A beautiful large trunk
+- Elegant branching structure
+- Rich layered foliage
+- Pink, lavender, and pale green leaves
+- Hanging wish cards
+- Soft light filtering through branches
+- Gentle motion caused by wind
+- Small glowing particles
+- Flower petals falling slowly
+- A beautiful circular seating area
+- Small garden stones and surrounding flowers
+
+Do not create a glowing cylinder with spheres attached.
+
+The tree must look carefully sculpted and organic.
+
+Interaction:
+- Walk toward the tree.
+- Select a hanging wish tag.
+- Create a personal intention.
+- View saved intentions.
+- Attach a practical next step.
+- Add a new wish tag to the tree.
+
+Ensure the wishes are represented as personal reflections, not promises of supernatural outcomes.
+
+## LOCATION 06 — CĂN PHÒNG MƯA
+### The Rain Room
+
+Visual identity: Cozy, intimate, cinematic, deeply calming.
+
+Exterior:
+- A beautiful glass-and-wood cabin
+- Large windows
+- Warm amber lighting
+- Deep blue rainy night outside
+- A garden path surrounded by lush vegetation
+- Soft roof details
+- Rainwater runoff from the roof
+- Wet stone surfaces
+- Warm light reflected in puddles
+
+Interior:
+- Large floor-to-ceiling window
+- Visible animated rain outside
+- Cozy armchair
+- Sofa
+- Soft rugs
+- Blankets
+- Wooden coffee table
+- Bookshelves
+- Plants
+- Small decorative lights
+- Beautiful lamps
+- Window condensation where practical
+- Soft reflections on glass
+- Rain droplets moving across the window
+
+The camera should create an intimate feeling of sitting indoors while rain falls outside.
+
+Interaction:
+- Sit in a chair.
+- Change the audio atmosphere.
+- Start and pause ambient sounds.
+- Adjust volume.
+- Set a sleep timer.
+- Switch between rain, wind, night ambience, and available licensed music.
+
+Do not use copyrighted music without permission.
+
+This room should be among the most emotionally beautiful locations in the entire application.
+
+## LOCATION 07 — KHU VƯỜN CỦA RIÊNG BẠN
+### My Little Healing Garden
+
+Visual identity: Personal, peaceful, hopeful, creative.
+
+Exterior:
+- A private garden plot
+- Small cottage or greenhouse
+- Wooden garden paths
+- Flower beds
+- Small trees
+- Garden furniture
+- Decorative stepping stones
+- A tiny pond
+- Watering can
+- Garden tools
+- Beautiful natural sunlight or moonlight
+
+Interior:
+- A charming small greenhouse
+- Glass roof
+- Wooden frames
+- Potted plants
+- Garden shelves
+- Small workbench
+- Seed packets
+- A warm lantern
+- Decorative storage cabinets
+
+Interaction:
+- Plant a seed.
+- Water plants.
+- Choose decorative plants.
+- Personalize the garden.
+- Connect gentle self-care milestones to garden development.
+
+No competitive rankings.
+
+No punishment for missed days.
+
+A user's personal garden should remain private unless they explicitly choose to share it.
+
+---
+
+# PART 5 — REAL INTERIORS AND TRANSITIONS
+
+Implement a reusable interior experience system.
+
+Each destination should have:
+- A real exterior in the main 3D world.
+- A clear interactable entrance.
+- A smooth transition into an interior scene.
+- Actual interior geometry.
+- Specific materials and furniture.
+- Dedicated lighting.
+- Appropriate sound ambience.
+- Interactive furniture or objects.
+- A way to exit and return to the outdoor world.
+
+A player should not feel teleported into a generic dashboard.
+
+Instead, the transition should communicate movement between meaningful places.
+
+Possible approach:
+- Approach door.
+- Door opens or highlights.
+- Camera moves closer.
+- Brief seamless fade.
+- Load the correct interior scene.
+- Show avatar inside.
+- Allow indoor movement or meaningful camera exploration.
+- Interact with a specific object to open the relevant application feature.
+
+Use a shared interior scene manager if appropriate.
+
+Preserve world position when returning outdoors.
+
+The interiors do not all need to load simultaneously.
+
+Lazy-load interior scenes to reduce GPU and memory usage.
+
+---
+
+# PART 6 — UPGRADE THE CHARACTER SYSTEM
+
+The existing characters look overly primitive.
+
+Improve character quality while preserving navigation functionality.
+
+New avatar direction:
+- Stylized adult proportions
+- Soft facial expressions
+- Distinct hairstyle
+- Carefully modeled clothing
+- Gentle body language
+- Better limb silhouettes
+- Matching materials and palette
+- Natural idle movement
+- Smooth walking animation
+- Realistic foot placement where feasible
+
+Avoid floating ghost-like capsules.
+
+Avoid default halos, wings, or religious-looking character elements.
+
+Avatars should appear as friendly visitors to the Heali world.
+
+Implement or improve:
+- Walk
+- Idle
+- Turn
+- Sit
+- Wave
+- Interaction animation
+
+Provide a customizable default character.
+
+If using external avatar models, verify licensing and import them properly.
+
+Do not advertise animation support unless the character actually animates.
+
+---
+
+# PART 7 — CAMERA AND CINEMATIC EXPERIENCE
+
+Implement a camera system appropriate for a premium 3D exploration experience.
+
+Modes:
+1. Third-person exploration camera
+2. Scenic overview camera
+3. Free-look camera, where practical
+4. Interior camera
+5. Cinematic interaction camera
+
+Camera behavior:
+- Smooth damping
+- Controlled rotation
+- Sensible zoom limits
+- Collision handling
+- Comfortable movement speed
+- No severe clipping through buildings
+- Stable framing during interactions
+- Smooth transitions between modes
+
+Provide cinematic camera compositions at important destinations.
+
+Example:
+When arriving at the lake, subtly frame the moon and lantern reflections behind the player.
+
+When entering the journal cottage, reveal the warm writing desk and window.
+
+When entering the rain room, move toward the armchair facing the rain-covered glass.
+
+These moments should feel carefully directed.
+
+Keep them short and skippable.
+
+---
+
+# PART 8 — ENVIRONMENTAL ANIMATION
+
+Make the world feel alive without overwhelming the user.
+
+Add:
+- Gentle grass movement
+- Tree branches swaying
+- Falling leaves
+- Floating flower petals
+- Subtle water movement
+- Lantern motion
+- Fireflies
+- Slowly moving clouds
+- Soft interior light flicker
+- Rain falling outside the rain room
+- Occasional gentle wind
+- Subtle character idle animation
+
+Animations must follow consistent physics and scene context.
+
+Do not make every object glow, spin, bounce, or float.
+
+The environment should feel peaceful and believable.
+
+Support reduced-motion settings.
+
+Pause unnecessary animations when the application is not visible.
+
+---
+
+# PART 9 — LIGHTING AND MATERIAL REFINEMENT
+
+Lighting is a critical priority.
+
+Outdoor lighting:
+- Soft moonlight as key illumination
+- Cool ambient fill
+- Warm practical lights from windows and lanterns
+- Attractive shadow direction
+- Natural-looking contrast
+- Subtle atmospheric haze
+
+Indoor lighting:
+- Warm lamps
+- Soft light bouncing from wood surfaces
+- Cool moonlight or rain light from windows
+- Gentle shadowing
+- Realistic material response
+
+Avoid:
+- Completely flat ambient lighting
+- Harsh artificial shadows
+- Excessively saturated neon glow
+- Overexposed windows
+- Completely black interiors
+- Gray untextured geometry
+
+Tune material roughness, metallic properties, surface color, and normal mapping according to the object type.
+
+Water, glass, wood, stone, fabric, foliage, and metal should not look identical.
+
+---
+
+# PART 10 — PREMIUM ENVIRONMENTAL DETAIL PASS
+
+After the main geometry is implemented, perform a dedicated art-quality pass.
+
+Improve each scene through layers.
+
+**Large-scale composition**
+- Landscape silhouette
+- Architecture
+- Trees
+- Terrain
+- Major paths
+
+**Medium-scale detail**
+- Windows
+- Doors
+- Roof details
+- Fences
+- Furniture
+- Garden structures
+- Tree branches
+- Flower beds
+
+**Small-scale detail**
+- Flower petals
+- Rocks
+- Books
+- Cushions
+- Curtains
+- Lanterns
+- Planters
+- Wooden trim
+- Signs
+- Decorative lighting
+
+**Atmospheric detail**
+- Fog
+- Light rays where feasible
+- Fireflies
+- Water movement
+- Rain
+- Wind
+- Gentle sound
+
+Each scene should have an intentional focal point and a visually balanced composition.
+
+Avoid empty, unfinished spaces.
+
+Avoid placing unrelated props randomly just to increase object count.
+
+---
+
+# PART 11 — WORLD-FIRST UI DESIGN
+
+Keep the 3D world visually dominant.
+
+The outdoor scene should occupy most of the screen.
+
+Minimal interface:
+- Heali logo
+- Compact navigation
+- World map
+- Avatar controls
+- Sound toggle
+- Settings
+- Contextual interaction instructions
+
+Do not cover the environment with large persistent dashboard panels.
+
+Use elegant and readable overlays only when the user interacts with a feature.
+
+The 3D environment is the main navigation interface.
+
+Maintain fast-access navigation for users who do not wish to walk between destinations.
+
+All interface copy must remain in Vietnamese.
+
+---
+
+# PART 12 — TECHNICAL REQUIREMENTS
+
+Inspect the existing codebase before making changes.
+
+Preserve the current framework and compatible dependencies.
+
+If React Three Fiber is already used, extend its existing implementation rather than introducing a competing rendering system.
+
+Recommended modular components:
+
+World:
+- HealiWorld
+- TerrainSystem
+- WaterSystem
+- SkyAndAtmosphere
+- VegetationSystem
+- EnvironmentLighting
+- WeatherSystem
+- WorldNavigation
+
+Player:
+- AvatarModel
+- AvatarController
+- CharacterAnimations
+- ThirdPersonCamera
+- CharacterCollision
+- InteractionController
+
+Locations:
+- LanternLakeScene
+- JournalCottageExterior
+- JournalCottageInterior
+- LettersHouseExterior
+- LettersHouseInterior
+- ConfessionGardenScene
+- WishTreeScene
+- RainRoomExterior
+- RainRoomInterior
+- PersonalGardenExterior
+- PersonalGardenInterior
+
+Shared Systems:
+- SceneTransitionManager
+- InteriorSceneLoader
+- EnvironmentAudioManager
+- GraphicsQualityManager
+- WorldInteractionUI
+- AssetLoadingManager
+
+Use these as architectural guidance, not mandatory filenames.
+
+Do not create duplicate rendering canvases unnecessarily.
+
+Preserve the existing feature components and connect them to appropriate interactive objects.
+
+Prefer:
+- Efficient reusable geometry
+- Optimized GLTF assets
+- Texture compression when available
+- Instancing for repeated vegetation
+- Controlled shadow costs
+- Lazy-loaded interiors
+- Adaptive resolution
+- Limited post-processing
+- Reduced GPU memory usage
+
+Target stable interaction on common desktop and mobile devices.
+
+Provide Low, Medium, and High rendering settings.
+
+Provide a lightweight fallback if WebGL is unsupported.
+
+---
+
+# PART 13 — IMPLEMENTATION SEQUENCE
+
+Do not attempt to create the entire final-quality world in one giant code change.
+
+Work in controlled milestones while preserving functioning features.
+
+## Milestone 1 — Outdoor World Art Overhaul
+
+First replace the primitive outdoor environment.
+
+Deliver:
+- Sculpted terrain
+- Beautiful lake and shoreline
+- Detailed vegetation
+- Organic walking paths
+- Proper sky
+- Atmospheric lighting
+- Detailed exterior architecture
+- Optimized environmental motion
+
+The existing avatar should still navigate successfully.
+
+Run the preview and test.
+
+## Milestone 2 — First Complete 3D Building
+
+Implement the Journal Cottage as a complete exterior/interior experience.
+
+Deliver:
+- Detailed cottage architecture
+- Real interior geometry
+- Door interaction
+- Scene transition
+- Indoor avatar/camera
+- Interactive writing desk
+- Working connection to the journal feature
+- Exit back to the world
+
+Use this location as the quality benchmark for all other interiors.
+
+## Milestone 3 — Remaining Destinations
+
+Create the full 3D experiences for:
+- Letters House
+- Rain Room
+- Personal Garden and Greenhouse
+- Confession Garden
+- Lantern Lake
+- Wish Tree
+
+Each must have its required environment details and working application interactions.
+
+## Milestone 4 — Avatar and Animation Polish
+
+Upgrade the character model, locomotion, camera behavior, and contextual animations.
+
+## Milestone 5 — Cinematic Quality Pass
+
+Improve:
+- Lighting
+- Materials
+- Composition
+- Ambient motion
+- Visual consistency
+- Sound integration
+- Performance
+- Mobile controls
+
+---
+
+# PART 14 — STRICT ACCEPTANCE CRITERIA
+
+Do not mark a milestone as complete unless it passes these checks.
+
+1. The outdoor world visually reads as a connected, natural landscape, not a collection of primitive objects on a flat plane.
+2. The avatar can move through the world without major clipping or control failures.
+3. The lake contains a designed shoreline, visible water treatment, lighting, and release interaction.
+4. Major buildings look architecturally finished rather than like basic boxes.
+5. Journal Cottage can be entered and contains an actual furnished 3D room.
+6. The writing desk opens the existing working journal feature.
+7. Letters House contains its own distinct 3D writing environment.
+8. Rain Room contains a furnished interior and a convincing rainy-window experience.
+9. Wish Tree contains substantial organic geometry and a working wish interaction.
+10. Confession Garden contains a recognizable social gathering environment connected to the anonymous community.
+11. User data, existing routes, authentication, and privacy protections continue to work.
+12. No critical compile errors or console errors remain.
+13. Mobile rendering and interaction are tested.
+14. The application has an appropriate loading and failure experience.
+15. Unfinished work is explicitly reported rather than presented as completed.
+
+---
+
+# PART 15 — START IMPLEMENTING NOW
+
+Do not simply describe what should be designed.
+
+Do not return only a roadmap.
+
+Do not generate a static concept illustration as a replacement for the real 3D environment.
+
+Inspect the existing project and start improving its code.
+
+**Immediate priority: transform the existing low-quality outdoor world into a visually beautiful, atmospheric, explorable 3D landscape, while keeping the avatar controls functional.**
+
+Then implement the fully furnished Journal Cottage exterior and interior as the first complete architectural location.
+
+After that, extend the same art quality to the remaining destinations.
+
+For each milestone:
+1. Make actual code changes.
+2. Run the application.
+3. Inspect the rendered result.
+4. Detect and fix errors.
+5. Verify user interaction.
+6. Report implemented features honestly.
+7. Continue the next milestone only after the current one works.
+
+Do not spend the entire response explaining your approach.
+
+Use the existing app and develop it.
+
+---
+
+# FINAL QUALITY STANDARD
+
+The final Heali world should make users feel as though they have stepped into a beautiful, private, emotionally comforting little universe.
+
+The environment should have the visual charm of a carefully art-directed 3D exploration experience.
+
+The architecture should feel handcrafted.
+
+The gardens should feel alive.
+
+The water should feel calm.
+
+The interiors should feel warm and safe.
+
+The avatar should feel connected to the environment.
+
+Every location should invite meaningful exploration.
+
+**The goal is not simply to make Heali look more 3D. The goal is to make Heali feel like a real, beautiful place worth visiting.**

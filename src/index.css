@@ -1,0 +1,318 @@
+@import "tailwindcss";
+@custom-variant dark (&:where(.dark, .dark *));
+
+@layer base {
+  :root {
+    --heali-bg: #f4f4ed;
+    --heali-surface: #faf7ef;
+    --heali-surface-muted: #f1efe5;
+    --heali-border: #dedcd0;
+    --heali-ink: #273829;
+    --heali-ink-muted: #576c59;
+    --heali-accent: #46613e;
+  }
+
+  .dark {
+    --heali-bg: #131a15;
+    --heali-surface: #1b241d;
+    --heali-surface-muted: #232f26;
+    --heali-border: #324236;
+    --heali-ink: #edf2e8;
+    --heali-ink-muted: #b0c0b2;
+    --heali-accent: #7aa370;
+  }
+
+  html {
+    font-size: 16px;
+  }
+
+  body {
+    font-family: 'Be Vietnam Pro', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background-color: var(--heali-bg);
+    color: var(--heali-ink);
+    overflow-x: hidden;
+    -webkit-tap-highlight-color: transparent;
+    transition: background-color 180ms ease, color 180ms ease;
+  }
+
+  .font-serif-healing {
+    font-family: 'Playfair Display', Georgia, serif;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--heali-accent);
+    outline-offset: 2px;
+  }
+}
+
+/* Low-motion / battery-saver mode (user toggle or OS reduced motion) */
+.heali-low-motion *,
+.heali-low-motion *::before,
+.heali-low-motion *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+  scroll-behavior: auto !important;
+}
+
+/* Custom scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: rgba(226, 232, 220, 0.4);
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(70, 97, 62, 0.3);
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(70, 97, 62, 0.5);
+}
+
+/* Soft ambient glows */
+@keyframes floatGentle {
+  0%, 100% {
+    transform: translateY(0px) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-8px) rotate(1deg);
+  }
+}
+
+@keyframes waterRipples {
+  0% {
+    opacity: 0.8;
+    transform: scale(0.9) translate(-50%, -50%);
+  }
+  50% {
+    opacity: 0.4;
+    transform: scale(1.15) translate(-50%, -50%);
+  }
+  100% {
+    opacity: 0.8;
+    transform: scale(0.9) translate(-50%, -50%);
+  }
+}
+
+@keyframes lanternFloat {
+  0% {
+    transform: translateY(0px) translateX(0px);
+  }
+  25% {
+    transform: translateY(-10px) translateX(6px);
+  }
+  50% {
+    transform: translateY(-4px) translateX(12px);
+  }
+  75% {
+    transform: translateY(-14px) translateX(6px);
+  }
+  100% {
+    transform: translateY(0px) translateX(0px);
+  }
+}
+
+@keyframes pulseGlow {
+  0%, 100% {
+    opacity: 0.6;
+    filter: drop-shadow(0 0 15px rgba(251, 191, 36, 0.4));
+  }
+  50% {
+    opacity: 0.95;
+    filter: drop-shadow(0 0 28px rgba(251, 191, 36, 0.75));
+  }
+}
+
+.animate-float-gentle {
+  animation: floatGentle 6s ease-in-out infinite;
+}
+
+.animate-lantern-bob {
+  animation: lanternFloat 8s ease-in-out infinite;
+}
+
+.animate-glow-pulse {
+  animation: pulseGlow 4s ease-in-out infinite;
+}
+
+/* Tarot 3D Flip & Candlelit Mystical Reveal Animations */
+.tarot-perspective {
+  perspective: 1300px;
+}
+
+.tarot-card-3d {
+  position: relative;
+  transform-style: preserve-3d;
+  transition: transform 0.9s cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: transform;
+}
+
+.tarot-card-3d.is-flipped {
+  transform: rotateY(180deg);
+}
+
+.tarot-card-face {
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+.tarot-card-face-front {
+  transform: rotateY(180deg);
+}
+
+@keyframes tarotLightSweep {
+  0% {
+    opacity: 0;
+    transform: translateX(-130%) skewX(-18deg);
+  }
+  20% {
+    opacity: 0.9;
+  }
+  80% {
+    opacity: 0.7;
+  }
+  100% {
+    opacity: 0;
+    transform: translateX(160%) skewX(-18deg);
+  }
+}
+
+.tarot-light-sweep {
+  animation: tarotLightSweep 1.35s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  will-change: transform, opacity;
+}
+
+@keyframes tarotAuraBreathe {
+  0%, 100% {
+    opacity: 0.42;
+    transform: scale(0.96);
+  }
+  50% {
+    opacity: 0.78;
+    transform: scale(1.04);
+  }
+}
+
+.tarot-aura-breathe {
+  animation: tarotAuraBreathe 5.2s ease-in-out infinite;
+  will-change: transform, opacity;
+}
+
+@keyframes tarotResultEmerge {
+  0% {
+    opacity: 0;
+    transform: translateY(16px) scale(0.985);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.tarot-result-emerge {
+  animation: tarotResultEmerge 0.75s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  will-change: transform, opacity;
+}
+
+@keyframes tarotSlotFloatIn {
+  0% {
+    opacity: 0;
+    transform: translateY(8px) scale(0.94);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.tarot-slot-enter {
+  animation: tarotSlotFloatIn 0.45s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes tarotShuffleRipple {
+  0% {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+  40% {
+    transform: translateY(-6px) rotate(-2deg) scale(0.97);
+    opacity: 0.72;
+  }
+  70% {
+    transform: translateY(2px) rotate(1.5deg) scale(1.01);
+    opacity: 0.92;
+  }
+  100% {
+    transform: translateY(0) rotate(0deg) scale(1);
+    opacity: 1;
+  }
+}
+
+.tarot-shuffle-ripple {
+  animation: tarotShuffleRipple 0.55s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes healiStageEnter {
+  0% {
+    opacity: 0;
+    transform: translateY(10px) scale(0.992);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.animate-fade-in,
+.heali-stage-enter {
+  animation: healiStageEnter 420ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  will-change: transform, opacity;
+}
+
+@keyframes healiSoftHalo {
+  0%, 100% {
+    opacity: 0.45;
+    transform: scale(0.97) translate3d(0, 0, 0);
+  }
+  50% {
+    opacity: 0.72;
+    transform: scale(1.03) translate3d(0, -6px, 0);
+  }
+}
+
+.heali-ambient-halo {
+  animation: healiSoftHalo 9s ease-in-out infinite;
+  will-change: transform, opacity;
+}
+
+.heali-card-surface {
+  transition: transform 240ms cubic-bezier(0.22, 1, 0.36, 1), border-color 220ms ease, box-shadow 220ms ease;
+}
+
+.heali-card-surface:hover {
+  transform: translateY(-2px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tarot-card-3d {
+    transition-duration: 0.01ms !important;
+  }
+  .tarot-light-sweep,
+  .tarot-aura-breathe,
+  .tarot-result-emerge,
+  .tarot-slot-enter,
+  .tarot-shuffle-ripple,
+  .animate-float-gentle,
+  .animate-lantern-bob,
+  .animate-glow-pulse,
+  .animate-fade-in,
+  .heali-stage-enter,
+  .heali-ambient-halo {
+    animation: none !important;
+  }
+  .heali-card-surface:hover {
+    transform: none !important;
+  }
+}

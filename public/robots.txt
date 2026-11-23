@@ -1,0 +1,9 @@
+User-agent: *
+Allow: /
+Allow: /gioi-thieu
+Allow: /dem-hoa-dang
+Disallow: /admin
+Disallow: /api/
+Disallow: /den/
+
+Sitemap: /sitemap.xml

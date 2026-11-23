@@ -1,0 +1,89 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <radialGradient id="skyGlow" cx="50%" cy="40%" r="60%">
+      <stop offset="0%" stop-color="#2d2254" />
+      <stop offset="60%" stop-color="#14152b" />
+      <stop offset="100%" stop-color="#090a14" />
+    </radialGradient>
+    <radialGradient id="moonGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#fff8db" stop-opacity="1" />
+      <stop offset="40%" stop-color="#ffd56b" stop-opacity="0.8" />
+      <stop offset="80%" stop-color="#f59e0b" stop-opacity="0.2" />
+      <stop offset="100%" stop-color="#f59e0b" stop-opacity="0" />
+    </radialGradient>
+    <linearGradient id="waterGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#1a1c38" />
+      <stop offset="50%" stop-color="#101124" />
+      <stop offset="100%" stop-color="#090a15" />
+    </linearGradient>
+    <linearGradient id="petal1" x1="0%" y1="100%" x2="50%" y2="0%">
+      <stop offset="0%" stop-color="#e06287" />
+      <stop offset="50%" stop-color="#f472b6" />
+      <stop offset="100%" stop-color="#fde047" />
+    </linearGradient>
+    <linearGradient id="petal2" x1="100%" y1="100%" x2="50%" y2="0%">
+      <stop offset="0%" stop-color="#c084fc" />
+      <stop offset="60%" stop-color="#f472b6" />
+      <stop offset="100%" stop-color="#fef08a" />
+    </linearGradient>
+    <radialGradient id="flame" cx="50%" cy="70%" r="60%">
+      <stop offset="0%" stop-color="#ffffff" />
+      <stop offset="35%" stop-color="#fde047" />
+      <stop offset="70%" stop-color="#f97316" />
+      <stop offset="100%" stop-color="#ef4444" stop-opacity="0" />
+    </radialGradient>
+    <filter id="softGlow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="16" result="blur" />
+      <feMerge>
+        <feMergeNode in="blur" />
+        <feMergeNode in="SourceGraphic" />
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- Background rounded canvas -->
+  <rect width="512" height="512" rx="112" fill="url(#skyGlow)" />
+
+  <!-- Stars -->
+  <circle cx="120" cy="110" r="2.5" fill="#ffffff" opacity="0.8" />
+  <circle cx="210" cy="80" r="1.5" fill="#fde047" opacity="0.7" />
+  <circle cx="390" cy="130" r="2" fill="#ffffff" opacity="0.6" />
+  <circle cx="420" cy="90" r="3" fill="#ffffff" opacity="0.9" />
+  <circle cx="90" cy="200" r="2" fill="#e9d5ff" opacity="0.7" />
+
+  <!-- Crescent Moon -->
+  <g transform="translate(360, 95)" filter="url(#softGlow)">
+    <circle cx="0" cy="0" r="42" fill="url(#moonGlow)" opacity="0.7" />
+    <path d="M-6,-28 A 30 30 0 1 0 28,14 A 25 25 0 1 1 -6,-28 Z" fill="#fef08a" />
+  </g>
+
+  <!-- Water Surface -->
+  <path d="M0,320 C140,310 260,330 380,318 C440,312 480,315 512,318 L512,512 L0,512 Z" fill="url(#waterGrad)" />
+
+  <!-- Water Ripples -->
+  <ellipse cx="256" cy="405" rx="140" ry="24" fill="none" stroke="#fef08a" stroke-width="1.5" opacity="0.25" />
+  <ellipse cx="256" cy="415" rx="190" ry="28" fill="none" stroke="#c084fc" stroke-width="1.2" opacity="0.2" />
+  <ellipse cx="256" cy="428" rx="230" ry="32" fill="none" stroke="#93c5fd" stroke-width="1" opacity="0.15" />
+
+  <!-- Floating Lotus Lantern Base -->
+  <ellipse cx="256" cy="385" rx="90" ry="22" fill="#312e81" opacity="0.6" filter="url(#softGlow)" />
+  <ellipse cx="256" cy="380" rx="72" ry="16" fill="#1e1b4b" />
+
+  <!-- Lotus Petals (Back) -->
+  <path d="M256,380 C220,350 200,280 256,220 C312,280 292,350 256,380 Z" fill="url(#petal2)" opacity="0.95" />
+  <path d="M230,380 C170,360 140,310 185,255 C220,305 235,360 230,380 Z" fill="url(#petal1)" opacity="0.85" />
+  <path d="M282,380 C342,360 372,310 327,255 C292,305 277,360 282,380 Z" fill="url(#petal1)" opacity="0.85" />
+
+  <!-- Lotus Petals (Front Side) -->
+  <path d="M256,385 C185,380 145,335 170,290 C210,330 240,365 256,385 Z" fill="url(#petal2)" />
+  <path d="M256,385 C327,380 367,335 342,290 C302,330 272,365 256,385 Z" fill="url(#petal2)" />
+
+  <!-- Lotus Petals (Center Front) -->
+  <path d="M256,390 C225,370 215,315 256,260 C297,315 287,370 256,390 Z" fill="url(#petal1)" />
+
+  <!-- Candle & Warm Light Aura -->
+  <circle cx="256" cy="310" r="38" fill="url(#moonGlow)" opacity="0.8" filter="url(#softGlow)" />
+  <!-- Flame -->
+  <path d="M256,340 C246,330 244,305 256,280 C268,305 266,330 256,340 Z" fill="url(#flame)" filter="url(#softGlow)" />
+  <circle cx="256" cy="318" r="6" fill="#ffffff" />
+</svg>
