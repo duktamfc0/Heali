@@ -18,6 +18,7 @@ import {
   Trash2,
   RotateCcw,
   AlertCircle,
+  Volume2,
 } from 'lucide-react';
 import { PWAInstallButton } from './PWAInstallButton';
 
@@ -29,9 +30,11 @@ interface ProfileModalProps {
   theme?: 'light' | 'dark';
   lowMotion?: boolean;
   language?: 'vi' | 'en';
+  isAudioBarVisible?: boolean;
   onToggleTheme?: () => void;
   onToggleLowMotion?: () => void;
   onChangeLanguage?: (lang: 'vi' | 'en') => void;
+  onToggleAudioBar?: () => void;
 }
 
 export const ProfileModal: React.FC<ProfileModalProps> = ({
@@ -42,9 +45,11 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
   theme = 'light',
   lowMotion = false,
   language = 'vi',
+  isAudioBarVisible = true,
   onToggleTheme,
   onToggleLowMotion,
   onChangeLanguage,
+  onToggleAudioBar,
 }) => {
   const [nickname, setNickname] = useState(user?.nickname || '');
   const [avatar, setAvatar] = useState(user?.avatar || 'heart');
@@ -270,6 +275,21 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
                   </span>
                   <span className="text-[11px] text-[#576c59] dark:text-[#b0c0b2]">
                     {lowMotion ? (language === 'en' ? 'On' : 'Đang bật') : (language === 'en' ? 'Off' : 'Đang tắt')}
+                  </span>
+                </button>
+              )}
+              {onToggleAudioBar && (
+                <button
+                  type="button"
+                  onClick={onToggleAudioBar}
+                  className="sm:col-span-2 min-h-[44px] px-3 py-2 rounded-xl bg-white dark:bg-[#172019] border border-[#d6d3c6] dark:border-[#394b3d] text-xs font-semibold flex items-center justify-between gap-2 text-[#273829] dark:text-[#edf2e8]"
+                >
+                  <span className="inline-flex items-center gap-1.5">
+                    <Volume2 className="w-4 h-4 text-[#46613e] dark:text-[#98c18e]" />
+                    <span>{language === 'en' ? 'Healing music bar' : 'Thanh nhạc chữa lành nổi'}</span>
+                  </span>
+                  <span className="text-[11px] text-[#576c59] dark:text-[#b0c0b2]">
+                    {isAudioBarVisible ? (language === 'en' ? 'Shown' : 'Đang hiện') : (language === 'en' ? 'Hidden' : 'Đang tắt')}
                   </span>
                 </button>
               )}

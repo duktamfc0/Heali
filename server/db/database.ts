@@ -426,43 +426,70 @@ function seedInitialDataIfEmpty() {
     );
   }
 
-  const chairCount = (sqliteDb.prepare('SELECT COUNT(*) as cnt FROM spiritual_chairs').get() as { cnt: number }).cnt;
-  if (chairCount === 0) {
-    const insertChair = sqliteDb.prepare(`
-      INSERT INTO spiritual_chairs (id, owner_user_id, host_name, specialty, title, bio, seat_price, viewer_ticket_price, max_seats, booked_seats_count, viewer_count, is_live, created_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `);
-    insertChair.run(
-      'chair-tarot-1',
-      'system-host-1',
-      'Cố Vấn Mộc Trà',
-      'tarot',
-      'Ghế Trải Bài Tarot Soi Chiếu & Tình Cảm',
-      'Không gian phản chiếu nội tâm qua 3 lá bài Tarot, đặt câu hỏi mở để nhìn rõ điều bạn đang trăn trở (mang tính tham khảo & giải trí, không thay thế tư vấn tâm lý).',
-      0,
-      0,
-      8,
-      0,
-      0,
-      1,
-      new Date(Date.now() - 3600000 * 3).toISOString()
-    );
-    insertChair.run(
-      'chair-num-3',
-      'system-host-3',
-      'An Nhiên Số Học',
-      'numerology',
-      'Ghế Chiêm Nghiệm Con Số & Nhịp Sống',
-      'Cùng trò chuyện về chu kỳ cảm xúc cá nhân và thói quen chăm sóc bản thân hằng ngày.',
-      0,
-      0,
-      10,
-      0,
-      0,
-      1,
-      '2025-05-01T00:00:00.000Z'
-    );
-  }
+  const insertChair = sqliteDb.prepare(`
+    INSERT OR IGNORE INTO spiritual_chairs (id, owner_user_id, host_name, specialty, title, bio, seat_price, viewer_ticket_price, max_seats, booked_seats_count, viewer_count, is_live, created_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `);
+  insertChair.run(
+    'chair-tarot-1',
+    'system-host-1',
+    'Cố Vấn Mộc Trà',
+    'tarot',
+    'Ghế Trải Bài Tarot Soi Chiếu & Tình Cảm',
+    'Không gian phản chiếu nội tâm qua 3 lá bài Tarot, đặt câu hỏi mở để nhìn rõ điều bạn đang trăn trở (mang tính tham khảo & giải trí, không thay thế tư vấn tâm lý).',
+    0,
+    0,
+    8,
+    0,
+    0,
+    1,
+    new Date(Date.now() - 3600000 * 3).toISOString()
+  );
+  insertChair.run(
+    'chair-tuvi-2',
+    'system-host-2',
+    'Cố Vấn Huyền Minh',
+    'tuvi',
+    'Ghế Chiêm Nghiệm Tử Vi & Nhịp Thời Gian',
+    'Cùng nhìn lại vận trình cảm xúc, điểm tựa tinh thần và những chuyển biến nhẹ nhàng theo nhịp năm tháng (gợi mở suy ngẫm, không phán đoán định mệnh).',
+    0,
+    0,
+    8,
+    0,
+    0,
+    1,
+    new Date(Date.now() - 3600000 * 2).toISOString()
+  );
+  insertChair.run(
+    'chair-num-3',
+    'system-host-3',
+    'An Nhiên Số Học',
+    'numerology',
+    'Ghế Chiêm Nghiệm Con Số & Nhịp Sống',
+    'Cùng trò chuyện về chu kỳ cảm xúc cá nhân và thói quen chăm sóc bản thân hằng ngày.',
+    0,
+    0,
+    10,
+    0,
+    0,
+    1,
+    '2025-05-01T00:00:00.000Z'
+  );
+  insertChair.run(
+    'chair-combined-4',
+    'system-host-4',
+    'Cố Vấn Thảo Mộc',
+    'combined',
+    'Ghế Kết Hợp Tarot & Tử Vi Lắng Nghe',
+    'Phiên kết hợp trải bài soi chiếu hiện tại và góc nhìn chu kỳ cảm xúc, giúp bạn tìm lại sự bình tĩnh trong lòng.',
+    0,
+    0,
+    6,
+    0,
+    0,
+    1,
+    new Date(Date.now() - 3600000).toISOString()
+  );
 
   const shiftCount = (sqliteDb.prepare('SELECT COUNT(*) as cnt FROM moderator_shifts').get() as { cnt: number }).cnt;
   if (shiftCount === 0) {

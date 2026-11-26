@@ -63,9 +63,13 @@ const LOUNGE_TAGS = ['Sẻ chia', 'Lắng nghe', 'Gửi bình yên', 'Chào bạ
 
 interface StrangerChatViewProps {
   lowMotion?: boolean;
+  embeddedIn3DRoom?: boolean;
 }
 
-export const StrangerChatView: React.FC<StrangerChatViewProps> = ({ lowMotion = false }) => {
+export const StrangerChatView: React.FC<StrangerChatViewProps> = ({
+  lowMotion = false,
+  embeddedIn3DRoom = false,
+}) => {
   const [subMode, setSubMode] = useState<'one_on_one' | 'lounge'>('one_on_one');
   const [connStatus, setConnStatus] = useState<'connecting' | 'connected' | 'reconnecting'>('connecting');
   const [mySocketId, setMySocketId] = useState<string>('');
@@ -473,46 +477,70 @@ export const StrangerChatView: React.FC<StrangerChatViewProps> = ({ lowMotion = 
       )}
 
       {/* 3D Interactive Evening Community Clearing Stage */}
-      <SanctuaryScene3D
-        variant="community"
-        lowMotion={lowMotion}
-        allowPureViewToggle
-        className="min-h-[210px] sm:min-h-[240px]"
-      >
-        <div className="p-5 sm:p-8 flex flex-col justify-between min-h-[210px] sm:min-h-[240px] text-[#f4f4ed]">
-          <div className="flex flex-wrap items-center gap-3 text-xs font-semibold uppercase tracking-widest text-[#e6c37b]">
-            <span className="inline-flex items-center gap-1.5">
-              <MessageCircle className="w-4 h-4" />
-              <span>Góc gặp gỡ · Trò chuyện ẩn danh</span>
-            </span>
-          </div>
-
-          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 pt-6">
-            <div className="space-y-1 max-w-xl">
-              <h2 className="text-2xl sm:text-3xl font-bold font-serif-healing text-white">
-                Trò chuyện cùng người lạ
-              </h2>
-              <p className="text-xs sm:text-sm text-[#dce5d9] font-serif-healing italic">
-                Kết nối ẩn danh theo thời gian thực dưới tán cây ấm áp, không lưu lịch sử 1:1 sau khi rời phòng.
-              </p>
+      {embeddedIn3DRoom ? (
+        <div className="flex flex-wrap items-center justify-between gap-3 p-4 rounded-2xl bg-[#f1efe5] dark:bg-[#222c24] border border-[#dcdad0] dark:border-[#324236]">
+          <div className="space-y-0.5">
+            <div className="text-xs font-semibold uppercase tracking-wider text-[#46613e] dark:text-[#98c18e] flex items-center gap-1.5">
+              <MessageCircle className="w-3.5 h-3.5" />
+              <span>Bàn trà gặp gỡ 1:1 · Ẩn danh thời gian thực</span>
             </div>
-
-            <div className="px-3.5 py-2 rounded-2xl bg-[#162219]/85 border border-[#4a6250]/60 text-xs shrink-0 self-start sm:self-auto">
-              <div className="flex items-center gap-1.5 font-semibold text-[#f4f4ed]">
-                {connStatus === 'connected' ? (
-                  <Wifi className="w-3.5 h-3.5 text-[#98d18f]" />
-                ) : (
-                  <WifiOff className="w-3.5 h-3.5 text-[#e89581]" />
-                )}
-                <span className="tabular-nums">{stats.onlineCount} bạn trực tuyến</span>
-              </div>
-              <div className="text-[11px] text-[#b4c4b6] mt-0.5 tabular-nums">
-                {stats.waitingCount} đang đợi · {stats.activeRoomsCount} cặp đang trò chuyện
-              </div>
+            <p className="text-xs text-[#576c59] dark:text-[#b0c0b2]">
+              Không lưu lịch sử 1:1 sau khi rời bàn trà.
+            </p>
+          </div>
+          <div className="px-3 py-1.5 rounded-xl bg-[#faf7ef] dark:bg-[#19211b] border border-[#dcdad0] dark:border-[#344236] text-xs">
+            <div className="flex items-center gap-1.5 font-semibold">
+              {connStatus === 'connected' ? (
+                <Wifi className="w-3.5 h-3.5 text-[#46613e]" />
+              ) : (
+                <WifiOff className="w-3.5 h-3.5 text-[#b54736]" />
+              )}
+              <span className="tabular-nums">{stats.onlineCount} bạn trực tuyến</span>
             </div>
           </div>
         </div>
-      </SanctuaryScene3D>
+      ) : (
+        <SanctuaryScene3D
+          variant="community"
+          lowMotion={lowMotion}
+          allowPureViewToggle
+          className="min-h-[210px] sm:min-h-[240px]"
+        >
+          <div className="p-5 sm:p-8 flex flex-col justify-between min-h-[210px] sm:min-h-[240px] text-[#f4f4ed]">
+            <div className="flex flex-wrap items-center gap-3 text-xs font-semibold uppercase tracking-widest text-[#e6c37b]">
+              <span className="inline-flex items-center gap-1.5">
+                <MessageCircle className="w-4 h-4" />
+                <span>Góc gặp gỡ · Trò chuyện ẩn danh</span>
+              </span>
+            </div>
+
+            <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 pt-6">
+              <div className="space-y-1 max-w-xl">
+                <h2 className="text-2xl sm:text-3xl font-bold font-serif-healing text-white">
+                  Trò chuyện cùng người lạ
+                </h2>
+                <p className="text-xs sm:text-sm text-[#dce5d9] font-serif-healing italic">
+                  Kết nối ẩn danh theo thời gian thực dưới tán cây ấm áp, không lưu lịch sử 1:1 sau khi rời phòng.
+                </p>
+              </div>
+
+              <div className="px-3.5 py-2 rounded-2xl bg-[#162219]/85 border border-[#4a6250]/60 text-xs shrink-0 self-start sm:self-auto">
+                <div className="flex items-center gap-1.5 font-semibold text-[#f4f4ed]">
+                  {connStatus === 'connected' ? (
+                    <Wifi className="w-3.5 h-3.5 text-[#98d18f]" />
+                  ) : (
+                    <WifiOff className="w-3.5 h-3.5 text-[#e89581]" />
+                  )}
+                  <span className="tabular-nums">{stats.onlineCount} bạn trực tuyến</span>
+                </div>
+                <div className="text-[11px] text-[#b4c4b6] mt-0.5 tabular-nums">
+                  {stats.waitingCount} đang đợi · {stats.activeRoomsCount} cặp đang trò chuyện
+                </div>
+              </div>
+            </div>
+          </div>
+        </SanctuaryScene3D>
+      )}
 
       {/* Mode Switcher Bar */}
       <div className="rounded-2xl bg-[#faf7ef] dark:bg-[#1b241d] border border-[#dedcd0] dark:border-[#324236] p-2.5 flex flex-wrap items-center gap-2 shadow-sm">

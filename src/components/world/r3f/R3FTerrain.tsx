@@ -5,6 +5,8 @@ import {
   groundHeightAt,
   distanceToStream,
   lakeNormDist,
+  isCoastalBayArea,
+  isRicePaddyArea,
   PATH_ROUTES,
   streamCenterX,
   LAKE_CENTER,
@@ -62,54 +64,55 @@ function createGrassClumpGeometry(): THREE.BufferGeometry {
   return geo;
 }
 
-// Sculpted Layered Limestone Karst Mountain Range Framing the Horizon (r = 86 .. 192)
-const DistantMountainRange: React.FC = () => {
+// Northern Floating Sky-Island Karst Mountain Crest (open East/West/South sky & cloud abyss!)
+const SkyIslandNorthernCrest: React.FC = () => {
   const { mountainGeo, mountainMat } = useMemo(() => {
-    const radialSegs = 128;
+    const radialSegs = 88;
     const ringSegs = 16;
-    const innerR = 86;
-    const outerR = 192;
+    const innerR = 59;
+    const outerR = 85;
+    const startAngle = -Math.PI * 0.84;
+    const endAngle = -Math.PI * 0.16;
 
     const positions: number[] = [];
     const colors: number[] = [];
     const indices: number[] = [];
 
-    const footEmerald = new THREE.Color('#3f6142');
-    const lushSlope = new THREE.Color('#4c724c');
-    const karstGranite = new THREE.Color('#6b7b72');
-    const ridgeBlue = new THREE.Color('#869da6');
-    const mistPeak = new THREE.Color('#dbe8ea');
+    const footEmerald = new THREE.Color('#4f7f42');
+    const lushSlope = new THREE.Color('#649654');
+    const karstGranite = new THREE.Color('#6c7883');
+    const ridgeBlue = new THREE.Color('#64748b');
+    const mistPeak = new THREE.Color('#e2e8f0');
 
     for (let rIdx = 0; rIdx <= ringSegs; rIdx++) {
       const rt = rIdx / ringSegs;
       const radius = THREE.MathUtils.lerp(innerR, outerR, rt);
-      // Multi-ridge envelope creating foreground & far limestone mountain chains
-      const mainEnvelope = Math.sin(rt * Math.PI * 0.94);
-      const subRidge = Math.abs(Math.sin(rt * Math.PI * 2.2)) * 0.35;
+      const ridgeEnv = Math.sin(rt * Math.PI);
 
       for (let aIdx = 0; aIdx <= radialSegs; aIdx++) {
-        const angle = (aIdx / radialSegs) * Math.PI * 2;
+        const at = aIdx / radialSegs;
+        const angle = THREE.MathUtils.lerp(startAngle, endAngle, at);
+        const arcEnv = Math.sin(at * Math.PI);
         const x = Math.cos(angle) * radius;
         const z = Math.sin(angle) * radius;
 
-        // Towering limestone karst spires on North, North-East & Southern horizon
-        const northBias = Math.max(0, -Math.sin(angle)) * 15;
-        const karstSpire = Math.pow(Math.abs(Math.sin(angle * 4.5 + 0.3 + rt * 1.4)), 1.8) * 26;
-        const cragDetail = Math.abs(Math.cos(angle * 11.0 - rt * 3.1)) * 11.5;
-        const rockShelf = Math.sin(angle * 19.0 + rt * 6.0) * 3.8;
-        const y = -2.0 + (mainEnvelope + subRidge) * (15 + karstSpire + cragDetail + rockShelf + northBias);
+        const peakCenter = Math.pow(arcEnv, 1.35);
+        const karstSpire = Math.pow(Math.abs(Math.sin(at * Math.PI * 5.0 + rt * 1.1)), 1.9) * 16;
+        const cragDetail = Math.sin(at * Math.PI * 11.0 - rt * 3.0) * 3.2;
+        const baseY = groundHeightAt(x, z) - 0.6;
+        const y = baseY + ridgeEnv * peakCenter * (12 + karstSpire + cragDetail);
 
         positions.push(x, y, z);
 
         const c = footEmerald.clone();
-        if (y > 38) {
-          c.copy(ridgeBlue).lerp(mistPeak, THREE.MathUtils.clamp((y - 38) / 18, 0, 1));
-        } else if (y > 24) {
-          c.copy(karstGranite).lerp(ridgeBlue, (y - 24) / 14);
-        } else if (y > 10) {
-          c.copy(lushSlope).lerp(karstGranite, (y - 10) / 14);
+        if (y > 23) {
+          c.copy(ridgeBlue).lerp(mistPeak, THREE.MathUtils.clamp((y - 23) / 10, 0, 1));
+        } else if (y > 14) {
+          c.copy(karstGranite).lerp(ridgeBlue, (y - 14) / 9);
+        } else if (y > 7) {
+          c.copy(lushSlope).lerp(karstGranite, (y - 7) / 7);
         } else {
-          c.lerp(lushSlope, THREE.MathUtils.clamp(y / 10, 0, 1));
+          c.lerp(lushSlope, THREE.MathUtils.clamp((y - 2) / 5, 0, 1));
         }
         c.toArray(colors, (rIdx * (radialSegs + 1) + aIdx) * 3);
       }
@@ -133,15 +136,14 @@ const DistantMountainRange: React.FC = () => {
 
     const mat = new THREE.MeshStandardMaterial({
       vertexColors: true,
-      roughness: 0.92,
-      metalness: 0.02,
-      flatShading: true,
+      roughness: 0.88,
+      metalness: 0.03,
     });
 
     return { mountainGeo: geo, mountainMat: mat };
   }, []);
 
-  return <mesh geometry={mountainGeo} material={mountainMat} receiveShadow />;
+  return <mesh geometry={mountainGeo} material={mountainMat} receiveShadow castShadow />;
 };
 
 // Continuous Curving Cobblestone Pathway Ribbons + Scenic Cliffside Wooden-Railed Stairs
@@ -156,6 +158,7 @@ const WindingCobblePaths: React.FC = () => {
     () =>
       new THREE.MeshStandardMaterial({
         map: cobbleTex,
+        color: 0xe2d8c5,
         roughness: 0.88,
         metalness: 0.02,
         polygonOffset: true,
@@ -245,11 +248,11 @@ const WindingCobblePaths: React.FC = () => {
   }, []);
 
   const stoneMat = useMemo(
-    () => new THREE.MeshStandardMaterial({ map: getStoneFoundationTexture(), roughness: 0.88 }),
+    () => new THREE.MeshStandardMaterial({ map: getStoneFoundationTexture(), color: 0x8d948c, roughness: 0.9, metalness: 0.04 }),
     []
   );
   const railWoodMat = useMemo(
-    () => new THREE.MeshStandardMaterial({ color: 0x6e472d, roughness: 0.82 }),
+    () => new THREE.MeshStandardMaterial({ color: 0x6e4e34, metalness: 0.05, roughness: 0.82 }),
     []
   );
 
@@ -284,7 +287,10 @@ const WindingCobblePaths: React.FC = () => {
 
 // Precompute rough avoidance for flora placement so tufts don't poke inside houses or water
 function isBlockedForFlora(x: number, z: number): boolean {
+  if (Math.hypot(x, z) > 78) return true;
   if (lakeNormDist(x, z) < 1.03) return true;
+  if (isCoastalBayArea(x, z)) return true;
+  if (isRicePaddyArea(x, z)) return true;
   if (distanceToStream(x, z) < 3.1 && z > -52 && z < 32) return true;
   if (Math.hypot(x, z + 4) < 3.8) return true;
   if (Math.hypot(x + 32, z + 2) < 4.0) return true;
@@ -321,22 +327,56 @@ export const SculptedTerrain: React.FC<{ isSoftwareGl?: boolean }> = ({ isSoftwa
     const pos = plane.attributes.position;
     const colors = new Float32Array(pos.count * 3);
 
-    const sunlitMeadow = new THREE.Color('#8ea25a');
-    const lushGrass = new THREE.Color('#708a49');
-    const pineSlope = new THREE.Color('#536e4a');
-    const dampMoss = new THREE.Color('#5f784c');
-    const riverbedSand = new THREE.Color('#a89b7c');
+    const sunlitMeadow = new THREE.Color('#86be5c');
+    const lushGrass = new THREE.Color('#5a9142');
+    const pineSlope = new THREE.Color('#3f6a2e');
+    const dampMoss = new THREE.Color('#4d7c4a');
+    const riverbedSand = new THREE.Color('#a89a7a');
+    const beachGoldSand = new THREE.Color('#e6cf94');
+    const paddyLoam = new THREE.Color('#594c38');
+    const cliffMossRim = new THREE.Color('#4d7c3f');
 
     for (let i = 0; i < pos.count; i++) {
-      const x = pos.getX(i);
-      const z = pos.getZ(i);
-      const y = groundHeightAt(x, z);
+      let x = pos.getX(i);
+      let z = pos.getZ(i);
+      const r = Math.hypot(x, z);
+      const ang = Math.atan2(z, x);
+
+      // Shape the outer perimeter into an organic circular Floating Sky-Island cliff rim (max r ~ 87.5)
+      const islandMaxR =
+        86.8 +
+        Math.sin(ang * 5 + 0.7) * 1.4 +
+        Math.cos(ang * 9 - 1.1) * 0.8;
+
+      if (r > islandMaxR) {
+        const scale = islandMaxR / r;
+        x *= scale;
+        z *= scale;
+        pos.setX(i, x);
+        pos.setZ(i, z);
+      }
+
+      const clampedR = Math.hypot(x, z);
+      let y = groundHeightAt(x, z);
+      if (clampedR > 76) {
+        const edgeT = THREE.MathUtils.clamp((clampedR - 76) / (islandMaxR - 76), 0, 1);
+        const rimDrop = -1.25 + Math.sin(ang * 6) * 0.22;
+        y = THREE.MathUtils.lerp(y, rimDrop, edgeT * edgeT);
+      }
       pos.setY(i, y);
 
       const dLake = lakeNormDist(x, z);
       const dStream = distanceToStream(x, z);
 
-      if (y < 0.08 || (dStream < 2.6 && z > -50 && z < 32) || dLake < 1.04) {
+      if (clampedR > 81) {
+        const rimT = THREE.MathUtils.clamp((clampedR - 81) / 5.5, 0, 1);
+        lushGrass.clone().lerp(cliffMossRim, rimT).toArray(colors, i * 3);
+      } else if (x > 22 && z > 40 && y < 0.95) {
+        const sandT = THREE.MathUtils.clamp((z - 40) / 8, 0, 1);
+        lushGrass.clone().lerp(beachGoldSand, sandT).toArray(colors, i * 3);
+      } else if (isRicePaddyArea(x, z)) {
+        paddyLoam.toArray(colors, i * 3);
+      } else if (y < 0.08 || (dStream < 2.6 && z > -50 && z < 32) || dLake < 1.04) {
         const wetT = THREE.MathUtils.clamp((y + 0.3) / 0.55, 0, 1);
         riverbedSand.clone().lerp(dampMoss, wetT * 0.75).toArray(colors, i * 3);
       } else if (y > 2.2) {
@@ -354,23 +394,22 @@ export const SculptedTerrain: React.FC<{ isSoftwareGl?: boolean }> = ({ isSoftwa
     const mat = new THREE.MeshStandardMaterial({
       map: grassDiff,
       normalMap: grassNor,
-      normalScale: new THREE.Vector2(0.55, 0.55),
+      normalScale: new THREE.Vector2(0.28, 0.28),
       roughnessMap: grassRough,
       vertexColors: true,
-      roughness: 0.92,
+      roughness: 0.88,
       metalness: 0.02,
     });
 
     return { valleyGeo: plane, valleyMat: mat };
   }, [grassDiff, grassNor, grassRough, isSoftwareGl]);
 
-  // 1. Sculpted River & Lake Boulders (InstancedMesh)
+  // 1. Sculpted River & Cliff Mossy Grey Boulders (InstancedMesh)
   const boulderRef = useRef<THREE.InstancedMesh>(null);
   const bouldersData = useMemo(() => {
     const items: Array<{ x: number; y: number; z: number; sx: number; sy: number; sz: number; ry: number; color: string }> = [];
-    const palette = ['#8f968f', '#7c847d', '#a2a79e', '#6f7872', '#95998c'];
+    const palette = ['#6f7b72', '#7a867c', '#636e66', '#89948b', '#5e6b62'];
 
-    // Stream bank boulders along winding brook
     for (let i = 0; i < 64; i++) {
       const z = -48 + (i / 64) * 76;
       const side = i % 2 === 0 ? -1 : 1;
@@ -386,7 +425,6 @@ export const SculptedTerrain: React.FC<{ isSoftwareGl?: boolean }> = ({ isSoftwa
       });
     }
 
-    // Waterfall cliff rocks at NE spring (x ~ 50, z ~ -47)
     for (let i = 0; i < 18; i++) {
       const angle = (i / 18) * Math.PI * 1.4 - 0.5;
       const rad = 3.2 + (i % 3) * 1.3;
@@ -402,10 +440,8 @@ export const SculptedTerrain: React.FC<{ isSoftwareGl?: boolean }> = ({ isSoftwa
       });
     }
 
-    // Shoreline rocks around Ho Hoa Dang
     for (let i = 0; i < 42; i++) {
       const angle = (i / 42) * Math.PI * 2;
-      // Leave pier gap & stream inlet gap
       const x = LAKE_CENTER.x + Math.cos(angle) * (LAKE_RADIUS_X + 0.8 + (i % 3) * 0.45);
       const z = LAKE_CENTER.z + Math.sin(angle) * (LAKE_RADIUS_Z + 0.6 + (i % 3) * 0.4);
       if (Math.abs(x) < 2.4 && z < 26) continue;
@@ -442,16 +478,16 @@ export const SculptedTerrain: React.FC<{ isSoftwareGl?: boolean }> = ({ isSoftwa
     mesh.computeBoundingSphere();
   }, [bouldersData]);
 
-  // 2. Botanical Grass Clusters Across Open Meadows (InstancedMesh)
+  // 2. Botanical Emerald Grass Clusters Across Open Meadows (InstancedMesh)
   const grassClumpGeo = useMemo(() => createGrassClumpGeometry(), []);
   const tuftRef = useRef<THREE.InstancedMesh>(null);
   const tuftsData = useMemo(() => {
     const items: Array<{ x: number; y: number; z: number; s: number; ry: number; color: string }> = [];
-    const greens = ['#4e8242', '#5b924c', '#45733a', '#689b56', '#7ba861'];
-    const total = isSoftwareGl ? 620 : 1150;
+    const greens = ['#4f843c', '#5e9644', '#72ad52', '#447635', '#67a048'];
+    const total = isSoftwareGl ? 140 : 240;
     for (let i = 0; i < total; i++) {
       const goldenAngle = i * 2.39996;
-      const r = 1.6 + Math.sqrt(i / total) * 64;
+      const r = 1.6 + Math.sqrt(i / total) * 68;
       const x = Math.cos(goldenAngle) * r;
       const z = Math.sin(goldenAngle) * r;
       if (isBlockedForFlora(x, z)) continue;
@@ -486,16 +522,15 @@ export const SculptedTerrain: React.FC<{ isSoftwareGl?: boolean }> = ({ isSoftwa
     mesh.computeBoundingSphere();
   }, [tuftsData]);
 
-  // 3. Lavender & Daisy Wildflower Fields (Biome-themed meadows!)
+  // 3. Lavender & Daisy Wildflower Fields
   const lavenderRef = useRef<THREE.InstancedMesh>(null);
   const lavenderData = useMemo(() => {
     const items: Array<{ x: number; y: number; z: number; s: number; color: string }> = [];
-    const purples = ['#8b5cf6', '#a78bfa', '#7c3aed', '#c4b5fd', '#9d79ec'];
-    const count = isSoftwareGl ? 240 : 460;
+    const purples = ['#8b5cf6', '#a78bfa', '#c4b5fd', '#7c3aed', '#ddd6fe'];
+    const count = isSoftwareGl ? 160 : 280;
     for (let i = 0; i < count; i++) {
       const a = i * 2.39996;
       const r = 4.2 + Math.sqrt(i / count) * 18.5;
-      // Clustered in Western Meadow around Vuon Tam Tinh (-32, -2) -> toward central path
       const x = -25 + Math.cos(a) * r;
       const z = 1 + Math.sin(a) * r * 0.85;
       if (isBlockedForFlora(x, z)) continue;
@@ -529,12 +564,12 @@ export const SculptedTerrain: React.FC<{ isSoftwareGl?: boolean }> = ({ isSoftwa
     mesh.computeBoundingSphere();
   }, [lavenderData]);
 
-  // 4. Sunlit Meadow Daisies & Cherry Blossom Field (Central Meadow & East Orchard)
+  // 4. Sunlit Meadow Daisies & Wildflowers
   const flowerRef = useRef<THREE.InstancedMesh>(null);
   const flowersData = useMemo(() => {
     const items: Array<{ x: number; y: number; z: number; s: number; color: string }> = [];
-    const palette = ['#fef9c3', '#fbcfe8', '#fde68a', '#f9a8d4', '#fffbeb', '#fed7aa'];
-    const count = isSoftwareGl ? 220 : 400;
+    const palette = ['#fef3c7', '#ffffff', '#fbcfe8', '#fde68a', '#e0f2fe', '#fce7f3'];
+    const count = isSoftwareGl ? 140 : 240;
     for (let i = 0; i < count; i++) {
       const a = i * 2.39996 + 0.6;
       const r = 2.4 + Math.sqrt(i / count) * 44;
@@ -616,11 +651,11 @@ export const SculptedTerrain: React.FC<{ isSoftwareGl?: boolean }> = ({ isSoftwa
 
   return (
     <group>
-      {/* 1. Expansive Valley Sculpted Terrain */}
+      {/* 1. Floating Sky-Island Emerald Meadow Top Terrain */}
       <mesh geometry={valleyGeo} material={valleyMat} receiveShadow />
 
-      {/* 2. Surrounding 3D Layered Mountain Ridges */}
-      <DistantMountainRange />
+      {/* 2. Northern Sky-Island Karst Mountain Crest */}
+      <SkyIslandNorthernCrest />
 
       {/* 3. Winding Cobblestone Trails & Hilltop Stone Stairs */}
       <WindingCobblePaths />
@@ -633,44 +668,44 @@ export const SculptedTerrain: React.FC<{ isSoftwareGl?: boolean }> = ({ isSoftwa
         receiveShadow
       >
         <dodecahedronGeometry args={[0.78, 1]} />
-        <meshStandardMaterial roughness={0.88} metalness={0.04} />
+        <meshStandardMaterial roughness={0.9} metalness={0.04} />
       </instancedMesh>
 
-      {/* 5. Meadow Grass Tufts */}
+      {/* 5. Emerald Meadow Grass Tufts */}
       <instancedMesh
         ref={tuftRef}
         args={[grassClumpGeo, undefined, tuftsData.length]}
         receiveShadow
       >
-        <meshStandardMaterial roughness={0.86} metalness={0.02} side={THREE.DoubleSide} />
+        <meshStandardMaterial roughness={0.82} metalness={0.02} side={THREE.DoubleSide} />
       </instancedMesh>
 
-      {/* 6. Western Lavender Wildflower Spikes */}
+      {/* 6. Western Lavender Blooms */}
       <instancedMesh
         ref={lavenderRef}
         args={[undefined, undefined, lavenderData.length]}
       >
         <coneGeometry args={[0.09, 0.34, 6]} />
-        <meshStandardMaterial roughness={0.72} />
+        <meshStandardMaterial roughness={0.74} metalness={0.03} />
       </instancedMesh>
 
-      {/* 7. Sunlit Wildflower Blossoms */}
+      {/* 7. Sunlit Meadow Daisies */}
       <instancedMesh
         ref={flowerRef}
         args={[undefined, undefined, flowersData.length]}
       >
         <icosahedronGeometry args={[0.095, 0]} />
-        <meshStandardMaterial roughness={0.62} emissive="#fef3c7" emissiveIntensity={0.06} />
+        <meshStandardMaterial roughness={0.62} />
       </instancedMesh>
 
-      {/* 8. Lakeside & Brook Cattail Reeds */}
+      {/* 8. Lakeside Emerald Reeds */}
       <instancedMesh
         ref={reedRef}
         args={[undefined, undefined, reedsData.length]}
         castShadow
       >
         <cylinderGeometry args={[0.018, 0.032, 1.0, 5]} />
-        <meshStandardMaterial color="#4e7540" roughness={0.82} />
+        <meshStandardMaterial color="#4a7c45" roughness={0.8} metalness={0.03} />
       </instancedMesh>
     </group>
   );

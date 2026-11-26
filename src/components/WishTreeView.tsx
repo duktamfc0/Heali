@@ -15,9 +15,13 @@ import {
 
 interface WishTreeViewProps {
   lowMotion?: boolean;
+  embeddedIn3DRoom?: boolean;
 }
 
-export const WishTreeView: React.FC<WishTreeViewProps> = ({ lowMotion = false }) => {
+export const WishTreeView: React.FC<WishTreeViewProps> = ({
+  lowMotion = false,
+  embeddedIn3DRoom = false,
+}) => {
   const [wishes, setWishes] = useState<Wish[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedTag, setSelectedTag] = useState<string>('all');
@@ -120,38 +124,59 @@ export const WishTreeView: React.FC<WishTreeViewProps> = ({ lowMotion = false })
       )}
 
       {/* 3D Interactive Bonsai Wish Tree Stage */}
-      <SanctuaryScene3D
-        variant="wishes"
-        lowMotion={lowMotion}
-        allowPureViewToggle
-        className="min-h-[245px] sm:min-h-[275px]"
-      >
-        <div className="p-5 sm:p-8 flex flex-col justify-between min-h-[245px] sm:min-h-[275px] text-[#f4f4ed]">
-          <div className="text-xs font-semibold uppercase tracking-widest text-[#b9e1b3]">
-            Khu vườn ý niệm · {wishes.length} dải lụa nguyện ước
+      {embeddedIn3DRoom ? (
+        <div className="flex flex-wrap items-center justify-between gap-3 p-4 rounded-2xl bg-[#f1efe5] dark:bg-[#222c24] border border-[#dcdad0] dark:border-[#324236]">
+          <div className="space-y-0.5">
+            <div className="text-xs font-semibold uppercase tracking-wider text-[#46613e] dark:text-[#98c18e]">
+              Khu vườn ý niệm · {wishes.length} dải lụa nguyện ước
+            </div>
+            <p className="text-xs text-[#576c59] dark:text-[#b0c0b2]">
+              Treo một dải lụa ước lành kèm cam kết nhỏ dịu dàng cho chính bạn hôm nay.
+            </p>
           </div>
-
-          <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 pt-6">
-            <div className="space-y-1.5 max-w-xl">
-              <h2 className="text-2xl sm:text-3xl font-bold font-serif-healing text-white">
-                Cây nguyện ước &amp; ý niệm lành
-              </h2>
-              <p className="text-xs sm:text-sm text-[#d9e5d7]">
-                Treo một dải lụa ước lành kèm cam kết nhỏ dịu dàng cho chính bạn hôm nay.
-              </p>
+          <button
+            type="button"
+            onClick={() => setIsHangingWish(true)}
+            className="min-h-[40px] flex items-center gap-1.5 rounded-xl bg-[#46613e] hover:bg-[#384f31] px-4 py-1.5 text-xs font-semibold text-white shadow-sm transition shrink-0"
+          >
+            <Plus className="w-3.5 h-3.5" />
+            <span>Treo dải ước mới</span>
+          </button>
+        </div>
+      ) : (
+        <SanctuaryScene3D
+          variant="wishes"
+          lowMotion={lowMotion}
+          allowPureViewToggle
+          className="min-h-[245px] sm:min-h-[275px]"
+        >
+          <div className="p-5 sm:p-8 flex flex-col justify-between min-h-[245px] sm:min-h-[275px] text-[#f4f4ed]">
+            <div className="text-xs font-semibold uppercase tracking-widest text-[#b9e1b3]">
+              Khu vườn ý niệm · {wishes.length} dải lụa nguyện ước
             </div>
 
-            <button
-              type="button"
-              onClick={() => setIsHangingWish(true)}
-              className="min-h-[46px] flex items-center justify-center gap-2 rounded-2xl bg-[#537949] hover:bg-[#43653a] px-5 py-2.5 text-xs sm:text-sm font-semibold text-white shadow-md transition active:scale-95 shrink-0 self-start md:self-auto whitespace-nowrap"
-            >
-              <Plus className="w-4 h-4" />
-              <span>Treo dải ước mới</span>
-            </button>
+            <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 pt-6">
+              <div className="space-y-1.5 max-w-xl">
+                <h2 className="text-2xl sm:text-3xl font-bold font-serif-healing text-white">
+                  Cây nguyện ước &amp; ý niệm lành
+                </h2>
+                <p className="text-xs sm:text-sm text-[#d9e5d7]">
+                  Treo một dải lụa ước lành kèm cam kết nhỏ dịu dàng cho chính bạn hôm nay.
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setIsHangingWish(true)}
+                className="min-h-[46px] flex items-center justify-center gap-2 rounded-2xl bg-[#537949] hover:bg-[#43653a] px-5 py-2.5 text-xs sm:text-sm font-semibold text-white shadow-md transition active:scale-95 shrink-0 self-start md:self-auto whitespace-nowrap"
+              >
+                <Plus className="w-4 h-4" />
+                <span>Treo dải ước mới</span>
+              </button>
+            </div>
           </div>
-        </div>
-      </SanctuaryScene3D>
+        </SanctuaryScene3D>
+      )}
 
       {/* Clean Single-Row Tag Filter */}
       <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">

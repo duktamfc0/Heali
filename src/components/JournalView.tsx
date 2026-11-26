@@ -28,12 +28,14 @@ import {
 
 interface JournalViewProps {
   lowMotion?: boolean;
+  embeddedIn3DRoom?: boolean;
   onOpenBreathing?: () => void;
   onOpenCalmGrounding?: () => void;
 }
 
 export const JournalView: React.FC<JournalViewProps> = ({
   lowMotion = false,
+  embeddedIn3DRoom = false,
   onOpenBreathing,
   onOpenCalmGrounding,
 }) => {
@@ -377,68 +379,116 @@ export const JournalView: React.FC<JournalViewProps> = ({
         </div>
       )}
 
-      {/* 3D Interactive Candlelit Journal Desk Stage */}
-      <SanctuaryScene3D
-        variant="journal"
-        lowMotion={lowMotion}
-        allowPureViewToggle
-        className="min-h-[225px] sm:min-h-[255px]"
-      >
-        <div className="p-5 sm:p-8 flex flex-col justify-between min-h-[225px] sm:min-h-[255px] text-[#f4f4ed]">
-          <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-[#e6c37b]">
-            <BookOpen className="w-4 h-4" />
-            <span>Không gian riêng tư · Mã hóa đầu cuối</span>
-          </div>
-
-          <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 pt-6">
-            <div className="space-y-1 max-w-xl">
-              <h1 className="text-2xl sm:text-3xl font-bold font-serif-healing text-white">
-                Nhật ký cảm xúc
-              </h1>
-              <p className="text-xs sm:text-sm text-[#e1dfd4] font-serif-healing italic">
-                Ánh nến nhỏ và trang giấy mở cho những dòng viết chỉ riêng mình bạn đọc lại.
-              </p>
+      {/* 3D Interactive Candlelit Journal Desk Stage or Compact In-Room Toolbar */}
+      {embeddedIn3DRoom ? (
+        <div className="flex flex-wrap items-center justify-between gap-3 p-4 rounded-2xl bg-[#f1efe5] dark:bg-[#222c24] border border-[#dcdad0] dark:border-[#324236]">
+          <div className="space-y-0.5">
+            <div className="text-xs font-semibold uppercase tracking-wider text-[#46613e] dark:text-[#98c18e] flex items-center gap-1.5">
+              <BookOpen className="w-3.5 h-3.5" />
+              <span>Không gian riêng tư · Mã hóa đầu cuối</span>
             </div>
-
-            <div className="flex flex-wrap items-center gap-2 shrink-0 self-start md:self-auto">
-              {user?.hasPin && isUnlocked && (
-                <button
-                  type="button"
-                  onClick={() => void handleLock()}
-                  className="min-h-[44px] flex items-center gap-1.5 rounded-2xl bg-[#18231a]/85 hover:bg-[#223125] border border-[#4c6351]/60 px-3.5 py-2 text-sm font-semibold text-[#e6ece4] transition whitespace-nowrap"
-                >
-                  <Lock className="w-4 h-4 text-[#a7cfa1]" />
-                  <span>Khóa lại</span>
-                </button>
-              )}
-
+            <p className="text-xs text-[#576c59] dark:text-[#b0c0b2]">
+              Trang giấy mở cho những dòng viết chỉ riêng mình bạn đọc lại.
+            </p>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            {user?.hasPin && isUnlocked && (
               <button
                 type="button"
-                onClick={() => {
-                  setPinError(null);
-                  setCurrentPinForChange('');
-                  setIsSettingPin(true);
-                }}
-                className="min-h-[44px] flex items-center gap-1.5 rounded-2xl bg-[#18231a]/85 hover:bg-[#223125] border border-[#4c6351]/60 px-3.5 py-2 text-sm font-semibold text-[#e6ece4] transition whitespace-nowrap"
+                onClick={() => void handleLock()}
+                className="min-h-[40px] flex items-center gap-1.5 rounded-xl bg-[#faf7ef] dark:bg-[#19211b] border border-[#cfd5c6] dark:border-[#37473a] px-3 py-1.5 text-xs font-semibold text-[#273829] dark:text-[#edf2e8]"
               >
-                <KeyRound className="w-4 h-4 text-[#e6c37b]" />
-                <span>{user?.hasPin ? 'Đổi mã PIN' : 'Bật khóa PIN'}</span>
+                <Lock className="w-3.5 h-3.5 text-[#46613e] dark:text-[#98c18e]" />
+                <span>Khóa lại</span>
               </button>
-
-              {isUnlocked && (
-                <button
-                  type="button"
-                  onClick={() => setIsNewEntryOpen(true)}
-                  className="min-h-[46px] flex items-center gap-1.5 rounded-2xl bg-[#537949] hover:bg-[#43653a] px-4 py-2.5 text-sm font-semibold text-white shadow-md transition whitespace-nowrap"
-                >
-                  <Plus className="w-4 h-4" />
-                  <span>Viết nhật ký</span>
-                </button>
-              )}
-            </div>
+            )}
+            <button
+              type="button"
+              onClick={() => {
+                setPinError(null);
+                setCurrentPinForChange('');
+                setIsSettingPin(true);
+              }}
+              className="min-h-[40px] flex items-center gap-1.5 rounded-xl bg-[#faf7ef] dark:bg-[#19211b] border border-[#cfd5c6] dark:border-[#37473a] px-3 py-1.5 text-xs font-semibold text-[#273829] dark:text-[#edf2e8]"
+            >
+              <KeyRound className="w-3.5 h-3.5 text-[#b5853b]" />
+              <span>{user?.hasPin ? 'Đổi PIN' : 'Khóa PIN'}</span>
+            </button>
+            {isUnlocked && (
+              <button
+                type="button"
+                onClick={() => setIsNewEntryOpen(true)}
+                className="min-h-[40px] flex items-center gap-1.5 rounded-xl bg-[#46613e] hover:bg-[#384f31] px-4 py-1.5 text-xs font-semibold text-white shadow-sm transition"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span>Viết nhật ký</span>
+              </button>
+            )}
           </div>
         </div>
-      </SanctuaryScene3D>
+      ) : (
+        <SanctuaryScene3D
+          variant="journal"
+          lowMotion={lowMotion}
+          allowPureViewToggle
+          className="min-h-[225px] sm:min-h-[255px]"
+        >
+          <div className="p-5 sm:p-8 flex flex-col justify-between min-h-[225px] sm:min-h-[255px] text-[#f4f4ed]">
+            <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-[#e6c37b]">
+              <BookOpen className="w-4 h-4" />
+              <span>Không gian riêng tư · Mã hóa đầu cuối</span>
+            </div>
+
+            <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 pt-6">
+              <div className="space-y-1 max-w-xl">
+                <h1 className="text-2xl sm:text-3xl font-bold font-serif-healing text-white">
+                  Nhật ký cảm xúc
+                </h1>
+                <p className="text-xs sm:text-sm text-[#e1dfd4] font-serif-healing italic">
+                  Ánh nến nhỏ và trang giấy mở cho những dòng viết chỉ riêng mình bạn đọc lại.
+                </p>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2 shrink-0 self-start md:self-auto">
+                {user?.hasPin && isUnlocked && (
+                  <button
+                    type="button"
+                    onClick={() => void handleLock()}
+                    className="min-h-[44px] flex items-center gap-1.5 rounded-2xl bg-[#18231a]/85 hover:bg-[#223125] border border-[#4c6351]/60 px-3.5 py-2 text-sm font-semibold text-[#e6ece4] transition whitespace-nowrap"
+                  >
+                    <Lock className="w-4 h-4 text-[#a7cfa1]" />
+                    <span>Khóa lại</span>
+                  </button>
+                )}
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPinError(null);
+                    setCurrentPinForChange('');
+                    setIsSettingPin(true);
+                  }}
+                  className="min-h-[44px] flex items-center gap-1.5 rounded-2xl bg-[#18231a]/85 hover:bg-[#223125] border border-[#4c6351]/60 px-3.5 py-2 text-sm font-semibold text-[#e6ece4] transition whitespace-nowrap"
+                >
+                  <KeyRound className="w-4 h-4 text-[#e6c37b]" />
+                  <span>{user?.hasPin ? 'Đổi mã PIN' : 'Bật khóa PIN'}</span>
+                </button>
+
+                {isUnlocked && (
+                  <button
+                    type="button"
+                    onClick={() => setIsNewEntryOpen(true)}
+                    className="min-h-[46px] flex items-center gap-1.5 rounded-2xl bg-[#537949] hover:bg-[#43653a] px-4 py-2.5 text-sm font-semibold text-white shadow-md transition whitespace-nowrap"
+                  >
+                    <Plus className="w-4 h-4" />
+                    <span>Viết nhật ký</span>
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        </SanctuaryScene3D>
+      )}
 
       {/* PIN Lock Screen */}
       {!isUnlocked && user?.hasPin ? (

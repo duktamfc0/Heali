@@ -24,9 +24,13 @@ import {
 
 interface ConfessionsFeedProps {
   lowMotion?: boolean;
+  embeddedIn3DRoom?: boolean;
 }
 
-export const ConfessionsFeed: React.FC<ConfessionsFeedProps> = ({ lowMotion = false }) => {
+export const ConfessionsFeed: React.FC<ConfessionsFeedProps> = ({
+  lowMotion = false,
+  embeddedIn3DRoom = false,
+}) => {
   const [confessions, setConfessions] = useState<Confession[]>([]);
   const [communityStatus, setCommunityStatus] = useState<CommunityStatus | null>(null);
   const [category, setCategory] = useState<string>('all');
@@ -209,40 +213,63 @@ export const ConfessionsFeed: React.FC<ConfessionsFeedProps> = ({ lowMotion = fa
       )}
 
       {/* 3D Interactive Evening Community Clearing Stage */}
-      <SanctuaryScene3D
-        variant="community"
-        lowMotion={lowMotion}
-        allowPureViewToggle
-        className="min-h-[215px] sm:min-h-[245px]"
-      >
-        <div className="p-5 sm:p-8 flex flex-col justify-between min-h-[215px] sm:min-h-[245px] text-[#f4f4ed]">
-          <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-[#e6c37b]">
-            <MessageSquareHeart className="w-4 h-4" />
-            <span>Góc tâm tình · Lắng nghe ẩn danh</span>
+      {embeddedIn3DRoom ? (
+        <div className="flex flex-wrap items-center justify-between gap-3 p-4 rounded-2xl bg-[#f1efe5] dark:bg-[#222c24] border border-[#dcdad0] dark:border-[#324236]">
+          <div className="space-y-0.5">
+            <div className="text-xs font-semibold uppercase tracking-wider text-[#9c5a2c] dark:text-[#e6c37b] flex items-center gap-1.5">
+              <MessageSquareHeart className="w-3.5 h-3.5" />
+              <span>Tâm tình ẩn danh · Không phán xét</span>
+            </div>
+            <p className="text-xs text-[#576c59] dark:text-[#b0c0b2]">
+              Đọc và gửi những nỗi niềm được kiểm duyệt an toàn trên tường giấy trà thất.
+            </p>
           </div>
-
-          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 pt-6">
-            <div className="space-y-1 max-w-xl">
-              <h2 className="text-2xl sm:text-3xl font-bold font-serif-healing text-white">
-                Tâm tình ẩn danh
-              </h2>
-              <p className="text-xs sm:text-sm text-[#dce5d9] font-serif-healing italic">
-                Ánh đèn lều nhỏ ấm áp cho những nỗi niềm cần được lắng nghe dịu dàng, không phán xét.
-              </p>
+          <button
+            type="button"
+            disabled={!isCommunityOpen}
+            onClick={() => setIsNewPostModalOpen(true)}
+            className="min-h-[40px] flex items-center gap-1.5 rounded-xl bg-[#46613e] hover:bg-[#384f31] disabled:opacity-45 px-4 py-1.5 text-xs font-semibold text-white shadow-sm transition shrink-0"
+          >
+            <Plus className="w-3.5 h-3.5" />
+            <span>{isCommunityOpen ? 'Gửi bộc bạch mới' : 'Tạm đóng ngoài ca trực'}</span>
+          </button>
+        </div>
+      ) : (
+        <SanctuaryScene3D
+          variant="community"
+          lowMotion={lowMotion}
+          allowPureViewToggle
+          className="min-h-[215px] sm:min-h-[245px]"
+        >
+          <div className="p-5 sm:p-8 flex flex-col justify-between min-h-[215px] sm:min-h-[245px] text-[#f4f4ed]">
+            <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-[#e6c37b]">
+              <MessageSquareHeart className="w-4 h-4" />
+              <span>Góc tâm tình · Lắng nghe ẩn danh</span>
             </div>
 
-            <button
-              type="button"
-              disabled={!isCommunityOpen}
-              onClick={() => setIsNewPostModalOpen(true)}
-              className="min-h-[46px] flex items-center justify-center gap-2 rounded-2xl bg-[#537949] hover:bg-[#43653a] disabled:opacity-45 px-5 py-2.5 text-xs sm:text-sm font-semibold text-white shadow-md transition active:scale-95 shrink-0 self-start sm:self-auto whitespace-nowrap"
-            >
-              <Plus className="w-4 h-4" />
-              <span>{isCommunityOpen ? 'Gửi bộc bạch mới' : 'Tạm đóng ngoài ca trực'}</span>
-            </button>
+            <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 pt-6">
+              <div className="space-y-1 max-w-xl">
+                <h2 className="text-2xl sm:text-3xl font-bold font-serif-healing text-white">
+                  Tâm tình ẩn danh
+                </h2>
+                <p className="text-xs sm:text-sm text-[#dce5d9] font-serif-healing italic">
+                  Ánh đèn lều nhỏ ấm áp cho những nỗi niềm cần được lắng nghe dịu dàng, không phán xét.
+                </p>
+              </div>
+
+              <button
+                type="button"
+                disabled={!isCommunityOpen}
+                onClick={() => setIsNewPostModalOpen(true)}
+                className="min-h-[46px] flex items-center justify-center gap-2 rounded-2xl bg-[#537949] hover:bg-[#43653a] disabled:opacity-45 px-5 py-2.5 text-xs sm:text-sm font-semibold text-white shadow-md transition active:scale-95 shrink-0 self-start sm:self-auto whitespace-nowrap"
+              >
+                <Plus className="w-4 h-4" />
+                <span>{isCommunityOpen ? 'Gửi bộc bạch mới' : 'Tạm đóng ngoài ca trực'}</span>
+              </button>
+            </div>
           </div>
-        </div>
-      </SanctuaryScene3D>
+        </SanctuaryScene3D>
+      )}
 
       {/* Slim Moderation Rule Bar + Category & Sort Strip */}
       <div className="rounded-3xl bg-[#faf7ef] dark:bg-[#1b241d] border border-[#dedcd0] dark:border-[#324236] p-4 sm:p-5 shadow-sm space-y-3.5">

@@ -1,5 +1,6 @@
 import React, { useMemo, useRef } from 'react';
 import * as THREE from 'three';
+import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { useFrame } from '@react-three/fiber';
 import { Html } from '@react-three/drei';
 import {
@@ -10,6 +11,7 @@ import {
   getFoliageSprigTexture,
 } from '../ProceduralTextures';
 import { groundHeightAt, streamCenterX } from './worldLayout';
+import { liveSceneActivity } from './roomTypes';
 
 /**
  * Shared live avatar world position updated every frame in R3FAvatar.
@@ -35,6 +37,7 @@ export const ProximityZoneSign: React.FC<{
   const btnRef = useRef<HTMLButtonElement>(null);
 
   useFrame(() => {
+    if (!liveSceneActivity.isOutdoor) return;
     const el = btnRef.current;
     if (!el) return;
     const dx = liveAvatarWorldPos.x - worldPosition[0];
@@ -63,18 +66,18 @@ export const ProximityZoneSign: React.FC<{
           onClick?.();
         }}
         style={{ opacity: 0, pointerEvents: 'none', transition: 'opacity 180ms ease' }}
-        className="px-3.5 py-2 rounded-2xl bg-[#faf7ef]/96 hover:bg-white border border-[#dedcd0] hover:border-[#46613e] shadow-lg text-center cursor-pointer whitespace-nowrap"
+        className="px-3.5 py-2 rounded-xl bg-[#faf7ef]/92 hover:bg-[#faf7ef] backdrop-blur-md border border-[#cfd8c9] hover:border-[#46613e]/50 shadow-lg text-center cursor-pointer whitespace-nowrap"
       >
-        <div className="text-xs font-semibold text-[#273829] leading-tight">{title}</div>
+        <div className="text-xs font-serif-healing font-semibold text-[#273829] leading-tight">{title}</div>
         {subtitle && (
-          <div className="text-[10px] text-[#556d57] leading-tight mt-0.5">{subtitle}</div>
+          <div className="text-[10px] text-[#5c6e5c] leading-tight mt-0.5">{subtitle}</div>
         )}
       </button>
     </Html>
   );
 };
 
-// Shared botanical PBR materials hook
+// Shared lush emerald botanical + sakura PBR materials hook
 function useNatureMaterials() {
   return useMemo(() => {
     const barkDiff = getBarkTexture();
@@ -88,21 +91,24 @@ function useNatureMaterials() {
 
     return {
       barkMat: new THREE.MeshStandardMaterial({
+        color: 0x6b4e38,
         map: barkDiff,
         bumpMap: barkBump,
-        bumpScale: 0.06,
+        bumpScale: 0.04,
         roughness: 0.92,
         metalness: 0.02,
       }),
       sakuraBarkMat: new THREE.MeshStandardMaterial({
-        color: 0x5c423b,
+        color: 0x735248,
         map: barkDiff,
         bumpMap: barkBump,
-        bumpScale: 0.04,
+        bumpScale: 0.03,
         roughness: 0.88,
+        metalness: 0.02,
       }),
       oakLeafMat: new THREE.MeshStandardMaterial({
         map: oakLeafTex,
+        color: 0x4f8b3f,
         alphaTest: 0.36,
         side: THREE.DoubleSide,
         roughness: 0.78,
@@ -110,100 +116,150 @@ function useNatureMaterials() {
       }),
       oakLeafWarmMat: new THREE.MeshStandardMaterial({
         map: oakLeafTex,
-        color: 0xdff0c4,
+        color: 0x74ac50,
         alphaTest: 0.36,
         side: THREE.DoubleSide,
-        roughness: 0.76,
+        roughness: 0.74,
       }),
       sakuraLeafMat: new THREE.MeshStandardMaterial({
         map: sakuraTex,
+        color: 0xffd6e6,
         alphaTest: 0.34,
         side: THREE.DoubleSide,
-        roughness: 0.72,
+        roughness: 0.68,
       }),
       crimsonPlumMat: new THREE.MeshStandardMaterial({
         map: crimsonPlumTex,
+        color: 0xf472b6,
         alphaTest: 0.34,
         side: THREE.DoubleSide,
         roughness: 0.68,
       }),
       palmFrondMat: new THREE.MeshStandardMaterial({
         map: palmTex,
+        color: 0x5ca348,
         alphaTest: 0.34,
         side: THREE.DoubleSide,
-        roughness: 0.72,
+        roughness: 0.74,
       }),
       pineLeafMat: new THREE.MeshStandardMaterial({
         map: pineTex,
+        color: 0x3b6e44,
         alphaTest: 0.34,
         side: THREE.DoubleSide,
         roughness: 0.82,
       }),
       willowLeafMat: new THREE.MeshStandardMaterial({
         map: willowTex,
+        color: 0x5d9652,
         alphaTest: 0.34,
         side: THREE.DoubleSide,
         roughness: 0.76,
       }),
       bambooMat: new THREE.MeshStandardMaterial({
-        color: 0x568246,
-        roughness: 0.48,
-        metalness: 0.05,
+        color: 0x5d8c49,
+        roughness: 0.68,
+        metalness: 0.04,
       }),
       bambooNodeMat: new THREE.MeshStandardMaterial({
-        color: 0x89a86d,
-        roughness: 0.58,
+        color: 0x466b36,
+        roughness: 0.74,
       }),
     };
   }, []);
 }
 
-// Reusable Helper: Crossed Multi-Plane Botanical Leaf Cluster (Breaks Silhouette Into Real Leaves)
+function bakeMergedGeometry(parts: THREE.BufferGeometry[]): THREE.BufferGeometry {
+  const normalized = parts.map((g) => {
+    const nonIdx = g.index ? g.toNonIndexed() : g.clone();
+    if (!nonIdx.getAttribute('normal')) nonIdx.computeVertexNormals();
+    if (!nonIdx.getAttribute('uv')) {
+      const count = nonIdx.getAttribute('position').count;
+      nonIdx.setAttribute('uv', new THREE.BufferAttribute(new Float32Array(count * 2), 2));
+    }
+    return nonIdx;
+  });
+  const merged = mergeGeometries(normalized, false);
+  normalized.forEach((g) => g.dispose());
+  parts.forEach((g) => g.dispose());
+  merged.computeBoundingSphere();
+  merged.computeBoundingBox();
+  return merged;
+}
+
+function makeTransformedPlane(
+  w: number,
+  h: number,
+  pos: [number, number, number],
+  rot: [number, number, number]
+): THREE.BufferGeometry {
+  const g = new THREE.PlaneGeometry(w, h);
+  const euler = new THREE.Euler(rot[0], rot[1], rot[2], 'XYZ');
+  const mat = new THREE.Matrix4().compose(
+    new THREE.Vector3(pos[0], pos[1], pos[2]),
+    new THREE.Quaternion().setFromEuler(euler),
+    new THREE.Vector3(1, 1, 1)
+  );
+  g.applyMatrix4(mat);
+  return g;
+}
+
+function buildClusterParts(
+  pos: [number, number, number],
+  size: number,
+  rotY: number
+): THREE.BufferGeometry[] {
+  const baseDefs: Array<{ rx: number; ry: number; s: number }> = [
+    { rx: 0, ry: 0, s: 1 },
+    { rx: 0.18, ry: Math.PI / 3, s: 1 },
+    { rx: -0.18, ry: -Math.PI / 3, s: 1 },
+    { rx: Math.PI * 0.42, ry: 0, s: 0.92 },
+  ];
+  const parentQuat = new THREE.Quaternion().setFromEuler(new THREE.Euler(0, rotY, 0));
+  const parentPos = new THREE.Vector3(pos[0], pos[1], pos[2]);
+  const parentMat = new THREE.Matrix4().compose(parentPos, parentQuat, new THREE.Vector3(1, 1, 1));
+
+  return baseDefs.map((d) => {
+    const g = new THREE.PlaneGeometry(size * d.s, size * d.s);
+    const localMat = new THREE.Matrix4().makeRotationFromEuler(new THREE.Euler(d.rx, d.ry, 0, 'XYZ'));
+    g.applyMatrix4(localMat);
+    g.applyMatrix4(parentMat);
+    return g;
+  });
+}
+
+let cachedUnitClusterGeo: THREE.BufferGeometry | null = null;
+function getUnitClusterGeo(): THREE.BufferGeometry {
+  if (!cachedUnitClusterGeo) {
+    cachedUnitClusterGeo = bakeMergedGeometry(buildClusterParts([0, 0, 0], 1, 0));
+  }
+  return cachedUnitClusterGeo;
+}
+
+// Reusable Helper: Crossed Multi-Plane Botanical Leaf Cluster baked into 1 draw call
 const FoliageClusterCard: React.FC<{
   position: [number, number, number];
   size: number;
   material: THREE.Material;
   rotY?: number;
 }> = ({ position, size, material, rotY = 0 }) => (
-  <group position={position} rotation-y={rotY}>
-    <mesh material={material} castShadow receiveShadow>
-      <planeGeometry args={[size, size]} />
-    </mesh>
-    <mesh rotation-y={Math.PI / 3} rotation-x={0.18} material={material} castShadow receiveShadow>
-      <planeGeometry args={[size, size]} />
-    </mesh>
-    <mesh rotation-y={-Math.PI / 3} rotation-x={-0.18} material={material} castShadow receiveShadow>
-      <planeGeometry args={[size, size]} />
-    </mesh>
-    <mesh rotation-x={Math.PI * 0.42} material={material} castShadow receiveShadow>
-      <planeGeometry args={[size * 0.92, size * 0.92]} />
-    </mesh>
-  </group>
+  <mesh
+    position={position}
+    rotation-y={rotY}
+    scale={size}
+    geometry={getUnitClusterGeo()}
+    material={material}
+    castShadow
+    receiveShadow
+  />
 );
 
-// 1. Realistic Broadleaf Oak / Sakura / Crimson Plum Tree (Curved Bark Trunk + Flared Roots + Forked Limbs + Layered Alpha Leaf Sprigs)
-export const RealisticOakTree: React.FC<{
-  position: [number, number, number];
-  scale?: number;
-  rotationY?: number;
-  variant?: 'oak' | 'sakura' | 'crimson_plum';
-}> = ({ position, scale = 1.0, rotationY = 0, variant = 'oak' }) => {
-  const mats = useNatureMaterials();
-  const trunkMat = variant === 'oak' ? mats.barkMat : mats.sakuraBarkMat;
-  const leafPrimary =
-    variant === 'crimson_plum'
-      ? mats.crimsonPlumMat
-      : variant === 'sakura'
-        ? mats.sakuraLeafMat
-        : mats.oakLeafMat;
-  const leafSunlit =
-    variant === 'crimson_plum'
-      ? mats.crimsonPlumMat
-      : variant === 'sakura'
-        ? mats.sakuraLeafMat
-        : mats.oakLeafWarmMat;
+let cachedOakWoodGeo: THREE.BufferGeometry | null = null;
+let cachedOakPrimaryLeavesGeo: THREE.BufferGeometry | null = null;
+let cachedOakSunlitLeavesGeo: THREE.BufferGeometry | null = null;
 
-  const { trunkGeo, branchGeos, rootGeos } = useMemo(() => {
+function getOakMergedGeometries() {
+  if (!cachedOakWoodGeo || !cachedOakPrimaryLeavesGeo || !cachedOakSunlitLeavesGeo) {
     const trunkCurve = new THREE.CatmullRomCurve3([
       new THREE.Vector3(0, -0.12, 0),
       new THREE.Vector3(0.08, 0.95, 0.04),
@@ -238,11 +294,9 @@ export const RealisticOakTree: React.FC<{
       )
     );
 
-    return { trunkGeo: trunk, branchGeos: branches, rootGeos: roots };
-  }, []);
+    cachedOakWoodGeo = bakeMergedGeometry([trunk, ...branches, ...roots]);
 
-  const sprigPositions = useMemo(
-    () => [
+    const sprigSpecs = [
       { pos: [1.32, 3.3, 0.65] as [number, number, number], size: 2.35, rot: 0.4, sun: true },
       { pos: [-1.32, 3.38, -0.55] as [number, number, number], size: 2.45, rot: 1.2, sun: false },
       { pos: [0.32, 3.55, -1.25] as [number, number, number], size: 2.25, rot: 2.1, sun: true },
@@ -251,153 +305,226 @@ export const RealisticOakTree: React.FC<{
       { pos: [0.75, 3.85, -0.55] as [number, number, number], size: 2.05, rot: 2.6, sun: true },
       { pos: [-0.65, 3.9, 0.45] as [number, number, number], size: 2.1, rot: 0.2, sun: false },
       { pos: [0.05, 3.2, 0.05] as [number, number, number], size: 2.2, rot: 1.4, sun: false },
-    ],
-    []
-  );
+    ];
+
+    const primaryParts: THREE.BufferGeometry[] = [];
+    const sunlitParts: THREE.BufferGeometry[] = [];
+    for (const s of sprigSpecs) {
+      const target = s.sun ? sunlitParts : primaryParts;
+      target.push(...buildClusterParts(s.pos, s.size, s.rot));
+    }
+    cachedOakPrimaryLeavesGeo = bakeMergedGeometry(primaryParts);
+    cachedOakSunlitLeavesGeo = bakeMergedGeometry(sunlitParts);
+  }
+  return {
+    woodGeo: cachedOakWoodGeo,
+    primaryLeavesGeo: cachedOakPrimaryLeavesGeo,
+    sunlitLeavesGeo: cachedOakSunlitLeavesGeo,
+  };
+}
+
+// 1. Realistic Broadleaf Oak / Sakura / Crimson Plum Tree (3 Merged Draw Calls per Tree)
+export const RealisticOakTree: React.FC<{
+  position: [number, number, number];
+  scale?: number;
+  rotationY?: number;
+  variant?: 'oak' | 'sakura' | 'crimson_plum';
+}> = ({ position, scale = 1.0, rotationY = 0, variant = 'oak' }) => {
+  const mats = useNatureMaterials();
+  const trunkMat = variant === 'oak' ? mats.barkMat : mats.sakuraBarkMat;
+  const leafPrimary =
+    variant === 'crimson_plum'
+      ? mats.crimsonPlumMat
+      : variant === 'sakura'
+        ? mats.sakuraLeafMat
+        : mats.oakLeafMat;
+  const leafSunlit =
+    variant === 'crimson_plum'
+      ? mats.crimsonPlumMat
+      : variant === 'sakura'
+        ? mats.sakuraLeafMat
+        : mats.oakLeafWarmMat;
+
+  const { woodGeo, primaryLeavesGeo, sunlitLeavesGeo } = useMemo(() => getOakMergedGeometries(), []);
 
   return (
     <group position={position} rotation-y={rotationY} scale={scale}>
-      {rootGeos.map((g, idx) => (
-        <mesh key={`rt_${idx}`} geometry={g} material={trunkMat} castShadow receiveShadow />
-      ))}
-      <mesh geometry={trunkGeo} material={trunkMat} castShadow receiveShadow />
-      {branchGeos.map((g, idx) => (
-        <mesh key={`br_${idx}`} geometry={g} material={trunkMat} castShadow />
-      ))}
-      {sprigPositions.map((s, idx) => (
-        <FoliageClusterCard
-          key={`sp_${idx}`}
-          position={s.pos}
-          size={s.size}
-          rotY={s.rot}
-          material={s.sun ? leafSunlit : leafPrimary}
-        />
-      ))}
+      <mesh geometry={woodGeo} material={trunkMat} castShadow receiveShadow />
+      <mesh geometry={primaryLeavesGeo} material={leafPrimary} castShadow receiveShadow />
+      <mesh geometry={sunlitLeavesGeo} material={leafSunlit} castShadow receiveShadow />
     </group>
   );
 };
 
-// 2. Tall Mountain Pine Conifer (Textured Bark + 5 Tiered Conifer Needle Bough Rings)
+let cachedPineTrunkGeo: THREE.BufferGeometry | null = null;
+let cachedPineFoliageGeo: THREE.BufferGeometry | null = null;
+
+function getPineMergedGeometries() {
+  if (!cachedPineTrunkGeo || !cachedPineFoliageGeo) {
+    const trunk = new THREE.CylinderGeometry(0.07, 0.24, 5.7, 9);
+    trunk.translate(0, 2.75, 0);
+    trunk.computeBoundingSphere();
+    cachedPineTrunkGeo = trunk;
+
+    const tiers = [
+      { y: 1.85, r: 1.65, blades: 6 },
+      { y: 2.85, r: 1.4, blades: 6 },
+      { y: 3.8, r: 1.15, blades: 5 },
+      { y: 4.65, r: 0.85, blades: 5 },
+      { y: 5.4, r: 0.58, blades: 4 },
+    ];
+    const parts: THREE.BufferGeometry[] = [];
+    tiers.forEach((tier, tIdx) => {
+      const tierRot = tIdx * 0.55;
+      for (let bIdx = 0; bIdx < tier.blades; bIdx++) {
+        const angle = tierRot + (bIdx / tier.blades) * Math.PI * 2;
+        const g = new THREE.PlaneGeometry(tier.r * 1.15, tier.r * 1.25);
+        g.rotateX(0.92);
+        g.translate(0, 0, tier.r * 0.52);
+        g.rotateY(angle);
+        g.translate(0, tier.y, 0);
+        parts.push(g);
+      }
+    });
+    parts.push(...buildClusterParts([0, 5.75, 0], 1.15, 0));
+    cachedPineFoliageGeo = bakeMergedGeometry(parts);
+  }
+  return { trunkGeo: cachedPineTrunkGeo, foliageGeo: cachedPineFoliageGeo };
+}
+
+// 2. Tall Mountain Pine Conifer (2 Merged Draw Calls per Tree)
 export const RealisticPineTree: React.FC<{
   position: [number, number, number];
   scale?: number;
   rotationY?: number;
 }> = ({ position, scale = 1.0, rotationY = 0 }) => {
   const { barkMat, pineLeafMat } = useNatureMaterials();
-
-  const tiers = [
-    { y: 1.85, r: 1.65, blades: 6 },
-    { y: 2.85, r: 1.4, blades: 6 },
-    { y: 3.8, r: 1.15, blades: 5 },
-    { y: 4.65, r: 0.85, blades: 5 },
-    { y: 5.4, r: 0.58, blades: 4 },
-  ];
+  const { trunkGeo, foliageGeo } = useMemo(() => getPineMergedGeometries(), []);
 
   return (
     <group position={position} rotation-y={rotationY} scale={scale}>
-      <mesh position={[0, 2.75, 0]} material={barkMat} castShadow receiveShadow>
-        <cylinderGeometry args={[0.07, 0.24, 5.7, 9]} />
-      </mesh>
-      {tiers.map((tier, tIdx) => (
-        <group key={`ptier_${tIdx}`} position={[0, tier.y, 0]} rotation-y={tIdx * 0.55}>
-          {Array.from({ length: tier.blades }).map((_, bIdx) => {
-            const angle = (bIdx / tier.blades) * Math.PI * 2;
-            return (
-              <group key={`pbl_${bIdx}`} rotation-y={angle}>
-                <mesh
-                  position={[0, 0, tier.r * 0.52]}
-                  rotation-x={0.92}
-                  material={pineLeafMat}
-                  castShadow
-                  receiveShadow
-                >
-                  <planeGeometry args={[tier.r * 1.15, tier.r * 1.25]} />
-                </mesh>
-              </group>
-            );
-          })}
-        </group>
-      ))}
-      <FoliageClusterCard position={[0, 5.75, 0]} size={1.15} material={pineLeafMat} />
+      <mesh geometry={trunkGeo} material={barkMat} castShadow receiveShadow />
+      <mesh geometry={foliageGeo} material={pineLeafMat} castShadow receiveShadow />
     </group>
   );
 };
 
-// 3. Lakeside Weeping Willow (Leaning Bark Trunk + Cascading Leaf Veil)
+let cachedWillowTrunkGeo: THREE.BufferGeometry | null = null;
+let cachedWillowVeilGeo: THREE.BufferGeometry | null = null;
+
+function getWillowMergedGeometries() {
+  if (!cachedWillowTrunkGeo || !cachedWillowVeilGeo) {
+    const curve = new THREE.CatmullRomCurve3([
+      new THREE.Vector3(0, -0.1, 0),
+      new THREE.Vector3(0.28, 1.15, 0.12),
+      new THREE.Vector3(0.55, 2.3, 0.25),
+    ]);
+    cachedWillowTrunkGeo = new THREE.TubeGeometry(curve, 10, 0.24, 8, false);
+
+    const curtains = [
+      { pos: [1.35, 2.0, 0.4] as [number, number, number], w: 1.6, h: 2.8, rot: 0.2 },
+      { pos: [0.3, 2.15, 1.25] as [number, number, number], w: 1.7, h: 2.9, rot: 1.3 },
+      { pos: [-0.55, 2.1, -0.75] as [number, number, number], w: 1.65, h: 2.75, rot: 2.4 },
+      { pos: [0.95, 2.15, -0.85] as [number, number, number], w: 1.6, h: 2.7, rot: 0.9 },
+      { pos: [-0.2, 2.35, 0.2] as [number, number, number], w: 2.1, h: 2.6, rot: 1.8 },
+    ];
+    const parts: THREE.BufferGeometry[] = [];
+    for (const c of curtains) {
+      parts.push(makeTransformedPlane(c.w, c.h, c.pos, [0, c.rot, 0]));
+      parts.push(makeTransformedPlane(c.w, c.h, c.pos, [0, c.rot + Math.PI / 2, 0]));
+    }
+    cachedWillowVeilGeo = bakeMergedGeometry(parts);
+  }
+  return { trunkGeo: cachedWillowTrunkGeo, veilGeo: cachedWillowVeilGeo };
+}
+
+// 3. Lakeside Weeping Willow (2 Merged Draw Calls per Tree)
 export const RealisticWillowTree: React.FC<{
   position: [number, number, number];
   scale?: number;
   rotationY?: number;
 }> = ({ position, scale = 1.0, rotationY = 0 }) => {
   const { barkMat, willowLeafMat } = useNatureMaterials();
-
-  const trunkGeo = useMemo(() => {
-    const curve = new THREE.CatmullRomCurve3([
-      new THREE.Vector3(0, -0.1, 0),
-      new THREE.Vector3(0.28, 1.15, 0.12),
-      new THREE.Vector3(0.55, 2.3, 0.25),
-    ]);
-    return new THREE.TubeGeometry(curve, 10, 0.24, 8, false);
-  }, []);
-
-  const curtains = [
-    { pos: [1.35, 2.0, 0.4] as [number, number, number], w: 1.6, h: 2.8, rot: 0.2 },
-    { pos: [0.3, 2.15, 1.25] as [number, number, number], w: 1.7, h: 2.9, rot: 1.3 },
-    { pos: [-0.55, 2.1, -0.75] as [number, number, number], w: 1.65, h: 2.75, rot: 2.4 },
-    { pos: [0.95, 2.15, -0.85] as [number, number, number], w: 1.6, h: 2.7, rot: 0.9 },
-    { pos: [-0.2, 2.35, 0.2] as [number, number, number], w: 2.1, h: 2.6, rot: 1.8 },
-  ];
+  const { trunkGeo, veilGeo } = useMemo(() => getWillowMergedGeometries(), []);
 
   return (
     <group position={position} rotation-y={rotationY} scale={scale}>
       <mesh geometry={trunkGeo} material={barkMat} castShadow receiveShadow />
-      {curtains.map((c, idx) => (
-        <group key={`wl_${idx}`} position={c.pos} rotation-y={c.rot}>
-          <mesh material={willowLeafMat} castShadow receiveShadow>
-            <planeGeometry args={[c.w, c.h]} />
-          </mesh>
-          <mesh rotation-y={Math.PI / 2} material={willowLeafMat} castShadow receiveShadow>
-            <planeGeometry args={[c.w, c.h]} />
-          </mesh>
-        </group>
-      ))}
+      <mesh geometry={veilGeo} material={willowLeafMat} castShadow receiveShadow />
     </group>
   );
 };
 
-// 4. Bamboo Clump Beside Upper Brook & Tea Pavilion
+let cachedBambooStalksGeo: THREE.BufferGeometry | null = null;
+let cachedBambooNodesGeo: THREE.BufferGeometry | null = null;
+let cachedBambooLeavesGeo: THREE.BufferGeometry | null = null;
+
+function getBambooMergedGeometries() {
+  if (!cachedBambooStalksGeo || !cachedBambooNodesGeo || !cachedBambooLeavesGeo) {
+    const stalks = [
+      { x: -0.22, z: -0.18, h: 4.8, leanX: -0.05, leanZ: 0.04 },
+      { x: 0.24, z: -0.1, h: 5.4, leanX: 0.06, leanZ: -0.04 },
+      { x: -0.05, z: 0.24, h: 4.3, leanX: 0.03, leanZ: 0.07 },
+      { x: 0.32, z: 0.28, h: 5.0, leanX: 0.07, leanZ: 0.05 },
+      { x: -0.34, z: 0.16, h: 3.9, leanX: -0.08, leanZ: 0.02 },
+    ];
+    const stalkParts: THREE.BufferGeometry[] = [];
+    const nodeParts: THREE.BufferGeometry[] = [];
+    const leafParts: THREE.BufferGeometry[] = [];
+
+    stalks.forEach((s, idx) => {
+      const m = new THREE.Matrix4().compose(
+        new THREE.Vector3(s.x, 0, s.z),
+        new THREE.Quaternion().setFromEuler(new THREE.Euler(s.leanX, idx * 0.7, s.leanZ, 'XYZ')),
+        new THREE.Vector3(1, 1, 1)
+      );
+
+      const culm = new THREE.CylinderGeometry(0.048, 0.068, s.h, 7);
+      culm.translate(0, s.h / 2, 0);
+      culm.applyMatrix4(m);
+      stalkParts.push(culm);
+
+      for (const ny of [0.9, 1.8, 2.7, 3.6]) {
+        if (ny < s.h) {
+          const node = new THREE.CylinderGeometry(0.065, 0.065, 0.04, 7);
+          node.translate(0, ny, 0);
+          node.applyMatrix4(m);
+          nodeParts.push(node);
+        }
+      }
+
+      const leaves = buildClusterParts([0, s.h - 0.35, 0], 1.65, 0);
+      leaves.forEach((g) => {
+        g.applyMatrix4(m);
+        leafParts.push(g);
+      });
+    });
+
+    cachedBambooStalksGeo = bakeMergedGeometry(stalkParts);
+    cachedBambooNodesGeo = bakeMergedGeometry(nodeParts);
+    cachedBambooLeavesGeo = bakeMergedGeometry(leafParts);
+  }
+  return {
+    stalksGeo: cachedBambooStalksGeo,
+    nodesGeo: cachedBambooNodesGeo,
+    leavesGeo: cachedBambooLeavesGeo,
+  };
+}
+
+// 4. Bamboo Clump Beside Upper Brook & Tea Pavilion (3 Merged Draw Calls per Clump)
 export const BambooClump: React.FC<{
   position: [number, number, number];
   rotationY?: number;
   scale?: number;
 }> = ({ position, rotationY = 0, scale = 1.0 }) => {
   const { bambooMat, bambooNodeMat, willowLeafMat } = useNatureMaterials();
-  const stalks = [
-    { x: -0.22, z: -0.18, h: 4.8, leanX: -0.05, leanZ: 0.04 },
-    { x: 0.24, z: -0.1, h: 5.4, leanX: 0.06, leanZ: -0.04 },
-    { x: -0.05, z: 0.24, h: 4.3, leanX: 0.03, leanZ: 0.07 },
-    { x: 0.32, z: 0.28, h: 5.0, leanX: 0.07, leanZ: 0.05 },
-    { x: -0.34, z: 0.16, h: 3.9, leanX: -0.08, leanZ: 0.02 },
-  ];
+  const { stalksGeo, nodesGeo, leavesGeo } = useMemo(() => getBambooMergedGeometries(), []);
 
   return (
     <group position={position} rotation-y={rotationY} scale={scale}>
-      {stalks.map((s, idx) => (
-        <group key={`bm_${idx}`} position={[s.x, 0, s.z]} rotation={[s.leanX, idx * 0.7, s.leanZ]}>
-          <mesh position={[0, s.h / 2, 0]} material={bambooMat} castShadow>
-            <cylinderGeometry args={[0.048, 0.068, s.h, 7]} />
-          </mesh>
-          {[0.9, 1.8, 2.7, 3.6].map(
-            (ny, nIdx) =>
-              ny < s.h && (
-                <mesh key={`bn_${nIdx}`} position={[0, ny, 0]} material={bambooNodeMat}>
-                  <cylinderGeometry args={[0.065, 0.065, 0.04, 7]} />
-                </mesh>
-              )
-          )}
-          <FoliageClusterCard position={[0, s.h - 0.35, 0]} size={1.65} material={willowLeafMat} />
-        </group>
-      ))}
+      <mesh geometry={stalksGeo} material={bambooMat} castShadow />
+      <mesh geometry={nodesGeo} material={bambooNodeMat} />
+      <mesh geometry={leavesGeo} material={willowLeafMat} castShadow receiveShadow />
     </group>
   );
 };
@@ -554,6 +681,7 @@ export const SoaringWhiteCranes: React.FC = () => {
   );
 
   useFrame((state) => {
+    if (!liveSceneActivity.isOutdoor) return;
     const t = state.clock.getElapsedTime();
     craneRefs.current.forEach((crane, idx) => {
       if (!crane) return;
@@ -621,22 +749,36 @@ export const SoaringWhiteCranes: React.FC = () => {
   );
 };
 
-// 2. Gentle Fluttering Meadow Butterflies
+// 2. Swirling Sky-Island Sanctuary Butterflies (expanded vibrant flock around blossoms & cliff rims)
 export const GardenButterflies: React.FC = () => {
   const groupRefs = useRef<Array<THREE.Group | null>>([]);
 
   const butterflies = useMemo(
     () => [
-      { cx: -2.0, cz: 4.5, y: 1.6, radius: 2.2, speed: 0.85, color: '#fef3c7' },
-      { cx: -24.0, cz: 1.0, y: 2.0, radius: 2.8, speed: 0.95, color: '#ddd6fe' },
-      { cx: 36.0, cz: 10.5, y: 1.9, radius: 2.5, speed: 0.78, color: '#fbcfe8' },
-      { cx: 24.5, cz: 5.5, y: 2.1, radius: 2.0, speed: 0.92, color: '#fde68a' },
-      { cx: 1.5, cz: 17.5, y: 1.5, radius: 2.4, speed: 0.82, color: '#e0f2fe' },
+      { cx: -2.0, cz: 4.5, y: 1.8, radius: 2.6, speed: 0.85, scale: 1.35, color: '#fb923c' },
+      { cx: -24.0, cz: 1.0, y: 2.2, radius: 3.2, speed: 0.95, scale: 1.4, color: '#38bdf8' },
+      { cx: 36.0, cz: 10.5, y: 2.1, radius: 2.8, speed: 0.78, scale: 1.3, color: '#f9a8d4' },
+      { cx: 24.5, cz: 5.5, y: 2.3, radius: 2.4, speed: 0.92, scale: 1.25, color: '#fde047' },
+      { cx: 1.5, cz: 17.5, y: 1.8, radius: 2.9, speed: 0.82, scale: 1.4, color: '#60a5fa' },
+      { cx: -12.0, cz: 12.0, y: 2.5, radius: 3.6, speed: 0.74, scale: 1.3, color: '#fb923c' },
+      { cx: -28.0, cz: 24.0, y: 4.2, radius: 4.1, speed: 0.88, scale: 1.5, color: '#f472b6' },
+      { cx: 8.5, cz: 26.0, y: 2.4, radius: 3.4, speed: 0.76, scale: 1.35, color: '#38bdf8' },
+      { cx: -16.0, cz: -30.0, y: 4.8, radius: 4.2, speed: 0.68, scale: 1.4, color: '#c4b5fd' },
+      { cx: 28.0, cz: -12.0, y: 3.0, radius: 3.8, speed: 0.8, scale: 1.3, color: '#fb923c' },
+      { cx: -6.0, cz: -8.0, y: 2.6, radius: 3.2, speed: 0.9, scale: 1.25, color: '#6ee7b7' },
+      { cx: 16.0, cz: 18.0, y: 2.2, radius: 2.8, speed: 0.86, scale: 1.3, color: '#fde047' },
+      { cx: -34.0, cz: -14.0, y: 3.4, radius: 4.0, speed: 0.72, scale: 1.45, color: '#f9a8d4' },
+      { cx: 42.0, cz: -20.0, y: 3.2, radius: 3.5, speed: 0.84, scale: 1.35, color: '#38bdf8' },
+      { cx: -4.0, cz: 46.0, y: 2.5, radius: 4.8, speed: 0.7, scale: 1.5, color: '#fb923c' },
+      { cx: 34.0, cz: 42.0, y: 2.8, radius: 4.2, speed: 0.78, scale: 1.4, color: '#f472b6' },
+      { cx: -52.0, cz: 22.0, y: 3.5, radius: 5.5, speed: 0.64, scale: 1.55, color: '#60a5fa' },
+      { cx: 52.0, cz: 28.0, y: 3.6, radius: 5.2, speed: 0.66, scale: 1.55, color: '#fde047' },
     ],
     []
   );
 
   useFrame((state) => {
+    if (!liveSceneActivity.isOutdoor) return;
     const t = state.clock.getElapsedTime();
     groupRefs.current.forEach((g, idx) => {
       if (!g) return;
@@ -644,7 +786,7 @@ export const GardenButterflies: React.FC = () => {
       const angle = t * b.speed + idx * 1.4;
       g.position.x = b.cx + Math.cos(angle) * b.radius;
       g.position.z = b.cz + Math.sin(angle * 0.85) * b.radius;
-      g.position.y = b.y + Math.sin(t * 2.4 + idx) * 0.22;
+      g.position.y = b.y + Math.sin(t * 2.4 + idx) * 0.28;
       g.rotation.y = -angle;
       const flap = Math.sin(t * 14 + idx * 2) * 0.65;
       const wL = g.children[0];
@@ -659,16 +801,17 @@ export const GardenButterflies: React.FC = () => {
       {butterflies.map((b, idx) => (
         <group
           key={`bf_${idx}`}
+          scale={b.scale}
           ref={(el) => {
             groupRefs.current[idx] = el;
           }}
         >
-          <mesh position={[-0.05, 0, 0]} rotation-x={Math.PI / 2}>
-            <circleGeometry args={[0.075, 6]} />
+          <mesh position={[-0.06, 0, 0]} rotation-x={Math.PI / 2}>
+            <circleGeometry args={[0.095, 6]} />
             <meshBasicMaterial color={b.color} side={THREE.DoubleSide} />
           </mesh>
-          <mesh position={[0.05, 0, 0]} rotation-x={Math.PI / 2}>
-            <circleGeometry args={[0.075, 6]} />
+          <mesh position={[0.06, 0, 0]} rotation-x={Math.PI / 2}>
+            <circleGeometry args={[0.095, 6]} />
             <meshBasicMaterial color={b.color} side={THREE.DoubleSide} />
           </mesh>
         </group>
@@ -842,7 +985,12 @@ export const ArchedWoodenBridgeR3F: React.FC<{
       {[-width / 2 + 0.08, width / 2 - 0.08].map((zOff, idx) => (
         <mesh key={`bl_${idx}`} position={[0, archHeight + 0.98, zOff]}>
           <sphereGeometry args={[0.09, 8, 8]} />
-          <meshStandardMaterial color="#fffbeb" emissive="#fbbf24" emissiveIntensity={0.85} />
+          <meshStandardMaterial
+            color="#fffbeb"
+            emissive="#fbbf24"
+            emissiveIntensity={1.55}
+            toneMapped={false}
+          />
         </mesh>
       ))}
     </group>
@@ -863,6 +1011,7 @@ export const GreatWishTreeR3F: React.FC<{
   );
 
   useFrame((state) => {
+    if (!liveSceneActivity.isOutdoor) return;
     const t = state.clock.getElapsedTime();
     if (tagsGroupRef.current) {
       tagsGroupRef.current.children.forEach((tag, idx) => {
@@ -871,8 +1020,8 @@ export const GreatWishTreeR3F: React.FC<{
     }
   });
 
-  const roots = useMemo(() => {
-    const list = [];
+  const { wishWoodGeo, wishPrimaryGeo, wishSunlitGeo } = useMemo(() => {
+    const woodParts: THREE.BufferGeometry[] = [];
     const angles = [0, 1.0, 2.1, 3.2, 4.3, 5.4];
     for (const a of angles) {
       const curve = new THREE.CatmullRomCurve3([
@@ -880,12 +1029,13 @@ export const GreatWishTreeR3F: React.FC<{
         new THREE.Vector3(Math.cos(a) * 0.95, 0.36, Math.sin(a) * 0.95),
         new THREE.Vector3(0, 1.15, 0),
       ]);
-      list.push(new THREE.TubeGeometry(curve, 10, 0.24, 8, false));
+      woodParts.push(new THREE.TubeGeometry(curve, 10, 0.24, 8, false));
     }
-    return list;
-  }, []);
 
-  const limbs = useMemo(() => {
+    const mainTrunk = new THREE.CylinderGeometry(0.52, 0.92, 3.2, 14);
+    mainTrunk.translate(0, 1.55, 0);
+    woodParts.push(mainTrunk);
+
     const coords = [
       { start: [0, 2.6, 0], mid: [0.95, 3.5, 0.45], end: [2.1, 4.2, 1.05], r: 0.22 },
       { start: [0, 2.6, 0], mid: [-1.05, 3.6, -0.35], end: [-2.2, 4.3, -0.85], r: 0.24 },
@@ -893,31 +1043,46 @@ export const GreatWishTreeR3F: React.FC<{
       { start: [0, 2.8, 0], mid: [-0.55, 3.65, 0.85], end: [-1.15, 4.25, 1.8], r: 0.21 },
       { start: [0, 3.2, 0], mid: [0.15, 4.1, 0.1], end: [0.25, 4.95, 0.15], r: 0.18 },
     ];
-    return coords.map((l) =>
-      new THREE.TubeGeometry(
-        new THREE.CatmullRomCurve3([
-          new THREE.Vector3(...l.start),
-          new THREE.Vector3(...l.mid),
-          new THREE.Vector3(...l.end),
-        ]),
-        10,
-        l.r,
-        8,
-        false
-      )
-    );
-  }, []);
+    for (const l of coords) {
+      woodParts.push(
+        new THREE.TubeGeometry(
+          new THREE.CatmullRomCurve3([
+            new THREE.Vector3(...l.start),
+            new THREE.Vector3(...l.mid),
+            new THREE.Vector3(...l.end),
+          ]),
+          10,
+          l.r,
+          8,
+          false
+        )
+      );
+    }
 
-  const canopySprigs = [
-    { pos: [2.05, 4.35, 1.0] as [number, number, number], size: 3.1, rot: 0.3, sun: true },
-    { pos: [-2.1, 4.45, -0.8] as [number, number, number], size: 3.2, rot: 1.4, sun: false },
-    { pos: [0.62, 4.55, -1.85] as [number, number, number], size: 2.9, rot: 2.2, sun: true },
-    { pos: [-1.1, 4.35, 1.72] as [number, number, number], size: 2.95, rot: 0.9, sun: false },
-    { pos: [0.2, 5.2, 0.15] as [number, number, number], size: 3.4, rot: 1.7, sun: true },
-    { pos: [1.15, 4.85, -0.8] as [number, number, number], size: 2.6, rot: 2.6, sun: true },
-    { pos: [-1.15, 4.85, 0.65] as [number, number, number], size: 2.65, rot: 0.2, sun: false },
-    { pos: [0, 4.05, 0] as [number, number, number], size: 2.8, rot: 1.1, sun: false },
-  ];
+    const canopySprigs = [
+      { pos: [2.05, 4.35, 1.0] as [number, number, number], size: 3.1, rot: 0.3, sun: true },
+      { pos: [-2.1, 4.45, -0.8] as [number, number, number], size: 3.2, rot: 1.4, sun: false },
+      { pos: [0.62, 4.55, -1.85] as [number, number, number], size: 2.9, rot: 2.2, sun: true },
+      { pos: [-1.1, 4.35, 1.72] as [number, number, number], size: 2.95, rot: 0.9, sun: false },
+      { pos: [0.2, 5.2, 0.15] as [number, number, number], size: 3.4, rot: 1.7, sun: true },
+      { pos: [1.15, 4.85, -0.8] as [number, number, number], size: 2.6, rot: 2.6, sun: true },
+      { pos: [-1.15, 4.85, 0.65] as [number, number, number], size: 2.65, rot: 0.2, sun: false },
+      { pos: [0, 4.05, 0] as [number, number, number], size: 2.8, rot: 1.1, sun: false },
+    ];
+
+    const primaryLeafParts: THREE.BufferGeometry[] = [];
+    const sunlitLeafParts: THREE.BufferGeometry[] = [];
+    for (const c of canopySprigs) {
+      const target = c.sun ? sunlitLeafParts : primaryLeafParts;
+      target.push(...buildClusterParts(c.pos, c.size, c.rot));
+    }
+
+    return {
+      wishWoodGeo: bakeMergedGeometry(woodParts),
+      wishPrimaryGeo: bakeMergedGeometry(primaryLeafParts),
+      wishSunlitGeo: bakeMergedGeometry(sunlitLeafParts),
+    };
+  }, []);
 
   const tags = useMemo(() => {
     const list = [];
@@ -944,31 +1109,21 @@ export const GreatWishTreeR3F: React.FC<{
       <mesh position={[0, 0.08, 0]} material={stoneMat} receiveShadow castShadow>
         <cylinderGeometry args={[3.3, 3.6, 0.22, 24]} />
       </mesh>
-      {roots.map((rGeo, idx) => (
-        <mesh key={`root_${idx}`} geometry={rGeo} material={barkMat} castShadow receiveShadow />
-      ))}
-      <mesh position={[0, 1.55, 0]} material={barkMat} castShadow receiveShadow>
-        <cylinderGeometry args={[0.52, 0.92, 3.2, 14]} />
-      </mesh>
-      {limbs.map((lGeo, idx) => (
-        <mesh key={`limb_${idx}`} geometry={lGeo} material={barkMat} castShadow />
-      ))}
-      {canopySprigs.map((c, idx) => (
-        <FoliageClusterCard
-          key={`leaf_${idx}`}
-          position={c.pos}
-          size={c.size}
-          rotY={c.rot}
-          material={c.sun ? oakLeafWarmMat : oakLeafMat}
-        />
-      ))}
+      <mesh geometry={wishWoodGeo} material={barkMat} castShadow receiveShadow />
+      <mesh geometry={wishPrimaryGeo} material={oakLeafMat} castShadow receiveShadow />
+      <mesh geometry={wishSunlitGeo} material={oakLeafWarmMat} castShadow receiveShadow />
 
       <group ref={tagsGroupRef}>
         {tags.map((t, idx) => (
           <group key={`tag_${idx}`} position={[t.tx, t.ty, t.tz]} rotation-y={t.angle}>
             <mesh>
               <boxGeometry args={[0.1, 0.28, 0.02]} />
-              <meshStandardMaterial color={t.warm ? '#fef3c7' : '#f4d3c2'} roughness={0.6} />
+              <meshStandardMaterial
+                color={t.warm ? '#fef3c7' : '#f4d3c2'}
+                emissive={t.warm ? '#f59e0b' : '#f472b6'}
+                emissiveIntensity={0.28}
+                roughness={0.6}
+              />
             </mesh>
             <mesh position={[0, 0.18, 0]}>
               <cylinderGeometry args={[0.006, 0.006, 0.36, 4]} />
@@ -977,6 +1132,25 @@ export const GreatWishTreeR3F: React.FC<{
           </group>
         ))}
       </group>
+
+      {/* Luminous Spirit Wisps Floating Around Ancient Wish Tree */}
+      {[
+        [-1.8, 3.7, 1.4],
+        [2.0, 4.1, 1.1],
+        [-1.2, 4.6, -1.6],
+        [1.5, 3.4, -1.5],
+        [0.1, 5.4, 1.5],
+      ].map(([wx, wy, wz], idx) => (
+        <mesh key={`wish_wisp_${idx}`} position={[wx, wy, wz]}>
+          <sphereGeometry args={[0.075, 8, 8]} />
+          <meshStandardMaterial
+            color="#fef9c3"
+            emissive={idx % 2 === 0 ? '#fde047' : '#6ee7b7'}
+            emissiveIntensity={1.75}
+            toneMapped={false}
+          />
+        </mesh>
+      ))}
 
       <ProximityZoneSign
         worldPosition={position}

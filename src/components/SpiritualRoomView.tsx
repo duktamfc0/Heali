@@ -57,10 +57,20 @@ function formatVnd(amount: number): string {
 
 interface SpiritualRoomViewProps {
   lowMotion?: boolean;
+  embeddedIn3DRoom?: boolean;
+  initialSubTab?: SubTabId;
 }
 
-export const SpiritualRoomView: React.FC<SpiritualRoomViewProps> = ({ lowMotion = false }) => {
-  const [subTab, setSubTab] = useState<SubTabId>('tarot');
+export const SpiritualRoomView: React.FC<SpiritualRoomViewProps> = ({
+  lowMotion = false,
+  embeddedIn3DRoom = false,
+  initialSubTab = 'tarot',
+}) => {
+  const [subTab, setSubTab] = useState<SubTabId>(initialSubTab);
+
+  useEffect(() => {
+    setSubTab(initialSubTab);
+  }, [initialSubTab]);
 
   // --- Tử Vi & Thần Số Học State ---
   const [displayName, setDisplayName] = useState('');
@@ -305,33 +315,35 @@ export const SpiritualRoomView: React.FC<SpiritualRoomViewProps> = ({ lowMotion 
 
   return (
     <div className="rounded-[28px] bg-[#faf7ef] dark:bg-[#1a221b] border border-[#dedcd0] dark:border-[#323f34] overflow-hidden shadow-sm text-[#273829] dark:text-[#edf2eb] heali-stage-enter">
-      {/* 3D INTERACTIVE ASTROLABE & TAROT SANCTUARY STAGE */}
-      <SanctuaryScene3D
-        variant="spiritual"
-        lowMotion={lowMotion}
-        allowPureViewToggle
-        className="min-h-[245px] sm:min-h-[280px] rounded-none border-0"
-        scrimClassName="absolute inset-0 pointer-events-none bg-gradient-to-r from-[#121c15]/92 via-[#18261c]/70 to-[#121c15]/30"
-      >
-        <div className="p-6 sm:p-8 flex flex-col justify-between min-h-[245px] sm:min-h-[280px]">
-          <div className="text-xs font-medium text-[#e5d2a3] flex items-center gap-2">
-            <span>Phòng Tâm Linh Heali</span>
-            <span aria-hidden="true">·</span>
-            <span>Công cụ gợi mở suy ngẫm</span>
-            <span aria-hidden="true">·</span>
-            <span className="tabular-nums">{liveChairsCount} phòng cố vấn đang mở</span>
-          </div>
+      {/* 3D Interactive Astrolabe & Tarot Sanctuary Stage */}
+      {!embeddedIn3DRoom && (
+        <SanctuaryScene3D
+          variant="spiritual"
+          lowMotion={lowMotion}
+          allowPureViewToggle
+          className="min-h-[245px] sm:min-h-[280px] rounded-none border-0"
+          scrimClassName="absolute inset-0 pointer-events-none bg-gradient-to-r from-[#121c15]/92 via-[#18261c]/70 to-[#121c15]/30"
+        >
+          <div className="p-6 sm:p-8 flex flex-col justify-between min-h-[245px] sm:min-h-[280px]">
+            <div className="text-xs font-medium text-[#e5d2a3] flex items-center gap-2">
+              <span>Phòng Tâm Linh Heali</span>
+              <span aria-hidden="true">·</span>
+              <span>Công cụ gợi mở suy ngẫm</span>
+              <span aria-hidden="true">·</span>
+              <span className="tabular-nums">{liveChairsCount} phòng cố vấn đang mở</span>
+            </div>
 
-          <div className="max-w-2xl space-y-2 pt-8">
-            <h1 className="text-2xl sm:text-3xl font-bold text-[#faf7ef] font-serif-healing leading-tight text-balance">
-              Soi chiếu nội tâm, lắng nghe mình và tìm điểm tựa bình yên
-            </h1>
-            <p className="text-xs sm:text-sm text-[#dce5d9] leading-relaxed font-serif-healing italic max-w-xl">
-              Trải bài 78 lá Tarot cổ điển, tham khảo góc nhìn Tử Vi &amp; Số Học hoặc trò chuyện riêng tư 1:1.
-            </p>
+            <div className="max-w-2xl space-y-2 pt-8">
+              <h1 className="text-2xl sm:text-3xl font-bold text-[#faf7ef] font-serif-healing leading-tight text-balance">
+                Soi chiếu nội tâm, lắng nghe mình và tìm điểm tựa bình yên
+              </h1>
+              <p className="text-xs sm:text-sm text-[#dce5d9] leading-relaxed font-serif-healing italic max-w-xl">
+                Trải bài 78 lá Tarot cổ điển, tham khảo góc nhìn Tử Vi &amp; Số Học hoặc trò chuyện riêng tư 1:1.
+              </p>
+            </div>
           </div>
-        </div>
-      </SanctuaryScene3D>
+        </SanctuaryScene3D>
+      )}
 
       {/* MAIN CONTENT BODY */}
       <div className="p-5 sm:p-8 space-y-6">

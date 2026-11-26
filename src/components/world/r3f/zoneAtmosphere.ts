@@ -21,175 +21,175 @@ export interface ZoneAtmospherePreset {
 }
 
 export const ZONE_ATMOSPHERE_PRESETS: Record<WorldZone['id'], ZoneAtmospherePreset> = {
-  // Panel 1: Crisp sunlit emerald countryside meadow & green mountain morning
+  // Center Sky-Island Sanctuary: Clear sunlit blue sky & fresh sunlit mint horizon
   journal: {
     id: 'journal',
     skyTop: new THREE.Color('#4a86b8'),
     skyHorizon: new THREE.Color('#ddf0e4'),
     sunColor: new THREE.Color('#fff5d6'),
-    sunGlow: 0.72,
+    sunGlow: 0.78,
     sunElevation: 0.34,
-    sunAzimuth: -0.75,
+    sunAzimuth: -0.58,
     fogColor: new THREE.Color('#d2e6d9'),
-    fogDensity: 0.0044,
-    hemiSky: new THREE.Color('#edf7f3'),
+    fogDensity: 0.0036,
+    hemiSky: new THREE.Color('#e6f3f8'),
     hemiGround: new THREE.Color('#5a6b38'),
-    hemiIntensity: 1.18,
-    keyColor: new THREE.Color('#fff4d8'),
-    keyIntensity: 1.85,
+    hemiIntensity: 1.12,
+    keyColor: new THREE.Color('#fff5de'),
+    keyIntensity: 1.65,
   },
-  // Panel 2: Golden sunset lotus lake, misty karst peaks & waterside pavilion
+  // Hồ Hoa Đăng Sky-Island Lake
   lake: {
     id: 'lake',
-    skyTop: new THREE.Color('#516c9e'),
-    skyHorizon: new THREE.Color('#f7cf92'),
-    sunColor: new THREE.Color('#ffb954'),
-    sunGlow: 1.15,
-    sunElevation: 0.14,
-    sunAzimuth: 0.35,
-    fogColor: new THREE.Color('#e8cfa8'),
-    fogDensity: 0.0047,
-    hemiSky: new THREE.Color('#ffe8c8'),
-    hemiGround: new THREE.Color('#566143'),
-    hemiIntensity: 1.05,
-    keyColor: new THREE.Color('#ffd391'),
-    keyIntensity: 1.95,
+    skyTop: new THREE.Color('#447fb2'),
+    skyHorizon: new THREE.Color('#d8eee6'),
+    sunColor: new THREE.Color('#fff0c8'),
+    sunGlow: 0.82,
+    sunElevation: 0.28,
+    sunAzimuth: -0.52,
+    fogColor: new THREE.Color('#cde4dc'),
+    fogDensity: 0.0038,
+    hemiSky: new THREE.Color('#e2f1f7'),
+    hemiGround: new THREE.Color('#4b6745'),
+    hemiIntensity: 1.08,
+    keyColor: new THREE.Color('#fff2d4'),
+    keyIntensity: 1.62,
   },
-  // Lavender meadow rotunda under soft lilac-blue alpine afternoon
+  // Western Lavender & Meadow Sanctuary
   community: {
     id: 'community',
-    skyTop: new THREE.Color('#5468a6'),
-    skyHorizon: new THREE.Color('#e3d7ee'),
-    sunColor: new THREE.Color('#fff0df'),
-    sunGlow: 0.65,
-    sunElevation: 0.28,
-    sunAzimuth: -1.1,
-    fogColor: new THREE.Color('#dcd4e7'),
-    fogDensity: 0.0047,
-    hemiSky: new THREE.Color('#efe7f8'),
-    hemiGround: new THREE.Color('#5b6149'),
+    skyTop: new THREE.Color('#4f89ba'),
+    skyHorizon: new THREE.Color('#e3f2e3'),
+    sunColor: new THREE.Color('#fff7de'),
+    sunGlow: 0.76,
+    sunElevation: 0.36,
+    sunAzimuth: -0.62,
+    fogColor: new THREE.Color('#d6e9dc'),
+    fogDensity: 0.0037,
+    hemiSky: new THREE.Color('#e8f4f8'),
+    hemiGround: new THREE.Color('#5e7240'),
     hemiIntensity: 1.12,
-    keyColor: new THREE.Color('#ffeedb'),
-    keyIntensity: 1.72,
+    keyColor: new THREE.Color('#fff6e0'),
+    keyIntensity: 1.65,
   },
-  // Jade lake shore & Ancient Wish Tree with turquoise reflections
+  // Ancient Wish Tree Terrace
   wishes: {
     id: 'wishes',
-    skyTop: new THREE.Color('#4288b5'),
-    skyHorizon: new THREE.Color('#d4eee9'),
-    sunColor: new THREE.Color('#fff4c4'),
-    sunGlow: 0.85,
-    sunElevation: 0.26,
-    sunAzimuth: -0.45,
-    fogColor: new THREE.Color('#cce6de'),
-    fogDensity: 0.0043,
-    hemiSky: new THREE.Color('#e5f7f3'),
-    hemiGround: new THREE.Color('#556b42'),
-    hemiIntensity: 1.16,
-    keyColor: new THREE.Color('#fff2cc'),
-    keyIntensity: 1.82,
+    skyTop: new THREE.Color('#4b85b7'),
+    skyHorizon: new THREE.Color('#e6eed6'),
+    sunColor: new THREE.Color('#ffeeb8'),
+    sunGlow: 0.82,
+    sunElevation: 0.31,
+    sunAzimuth: -0.55,
+    fogColor: new THREE.Color('#dbe8d6'),
+    fogDensity: 0.0037,
+    hemiSky: new THREE.Color('#e8f2f4'),
+    hemiGround: new THREE.Color('#5b6d3c'),
+    hemiIntensity: 1.1,
+    keyColor: new THREE.Color('#fff1d2'),
+    keyIntensity: 1.64,
   },
-  // Panel 3: High misty mountain pine cliff, cascading waterfalls & white cranes
+  // Northern Karst Highland Shrine
   spiritual_room: {
     id: 'spiritual_room',
-    skyTop: new THREE.Color('#3b5185'),
-    skyHorizon: new THREE.Color('#cedaf0'),
-    sunColor: new THREE.Color('#ffe7c7'),
-    sunGlow: 0.78,
-    sunElevation: 0.22,
-    sunAzimuth: -0.95,
-    fogColor: new THREE.Color('#c8d6ea'),
-    fogDensity: 0.0054,
-    hemiSky: new THREE.Color('#dbe6fa'),
-    hemiGround: new THREE.Color('#495c4e'),
-    hemiIntensity: 1.04,
-    keyColor: new THREE.Color('#ffeed9'),
-    keyIntensity: 1.58,
+    skyTop: new THREE.Color('#3d76a6'),
+    skyHorizon: new THREE.Color('#d2e8ec'),
+    sunColor: new THREE.Color('#f7f2dc'),
+    sunGlow: 0.72,
+    sunElevation: 0.32,
+    sunAzimuth: -0.48,
+    fogColor: new THREE.Color('#c8e0e2'),
+    fogDensity: 0.0041,
+    hemiSky: new THREE.Color('#dceef5'),
+    hemiGround: new THREE.Color('#4d6346'),
+    hemiIntensity: 1.05,
+    keyColor: new THREE.Color('#faf4e2'),
+    keyIntensity: 1.56,
   },
-  // Panel 4: Vibrant emerald-turquoise bamboo cascade valley & highland stream
+  // Eastern Tea Gazebo Orchard
   stranger_chat: {
     id: 'stranger_chat',
-    skyTop: new THREE.Color('#3c8cc2'),
-    skyHorizon: new THREE.Color('#d7f4ee'),
-    sunColor: new THREE.Color('#fff9dc'),
-    sunGlow: 0.82,
-    sunElevation: 0.38,
-    sunAzimuth: 0.85,
-    fogColor: new THREE.Color('#ceeae2'),
-    fogDensity: 0.0044,
-    hemiSky: new THREE.Color('#e7fbf6'),
-    hemiGround: new THREE.Color('#536e42'),
-    hemiIntensity: 1.2,
-    keyColor: new THREE.Color('#fff9e2'),
-    keyIntensity: 1.88,
+    skyTop: new THREE.Color('#528cbe'),
+    skyHorizon: new THREE.Color('#e9f0d8'),
+    sunColor: new THREE.Color('#fff3cf'),
+    sunGlow: 0.8,
+    sunElevation: 0.35,
+    sunAzimuth: -0.5,
+    fogColor: new THREE.Color('#dbe9d8'),
+    fogDensity: 0.0036,
+    hemiSky: new THREE.Color('#eaf4f6'),
+    hemiGround: new THREE.Color('#617440'),
+    hemiIntensity: 1.12,
+    keyColor: new THREE.Color('#fff4db'),
+    keyIntensity: 1.66,
   },
-  // Crimson plum blossom orchard & warm rose-gold dusk
+  // Memory Post Office Terrace
   letters: {
     id: 'letters',
-    skyTop: new THREE.Color('#645e96'),
-    skyHorizon: new THREE.Color('#f7ced3'),
-    sunColor: new THREE.Color('#ffcaa6'),
-    sunGlow: 0.92,
-    sunElevation: 0.19,
-    sunAzimuth: 0.95,
-    fogColor: new THREE.Color('#ebd2d6'),
-    fogDensity: 0.0047,
-    hemiSky: new THREE.Color('#fbe4e6'),
-    hemiGround: new THREE.Color('#5d5846'),
-    hemiIntensity: 1.08,
-    keyColor: new THREE.Color('#ffe2cc'),
-    keyIntensity: 1.74,
+    skyTop: new THREE.Color('#5592c4'),
+    skyHorizon: new THREE.Color('#f2ebd0'),
+    sunColor: new THREE.Color('#ffe7b3'),
+    sunGlow: 0.84,
+    sunElevation: 0.29,
+    sunAzimuth: -0.45,
+    fogColor: new THREE.Color('#e2ead6'),
+    fogDensity: 0.0037,
+    hemiSky: new THREE.Color('#ecf3f2'),
+    hemiGround: new THREE.Color('#647242'),
+    hemiIntensity: 1.1,
+    keyColor: new THREE.Color('#fff0cf'),
+    keyIntensity: 1.64,
   },
-  // Glass conservatory by willow bay in soft slate-jade rainlight
+  // Rain & Breath Conservatory
   rain_room: {
     id: 'rain_room',
-    skyTop: new THREE.Color('#466778'),
-    skyHorizon: new THREE.Color('#b6cfc9'),
-    sunColor: new THREE.Color('#ddeee9'),
-    sunGlow: 0.35,
-    sunElevation: 0.25,
-    sunAzimuth: 0.4,
-    fogColor: new THREE.Color('#b1cbc6'),
-    fogDensity: 0.006,
-    hemiSky: new THREE.Color('#d2e5e0'),
-    hemiGround: new THREE.Color('#4a5f51'),
-    hemiIntensity: 1.02,
-    keyColor: new THREE.Color('#e2f0ec'),
-    keyIntensity: 1.38,
+    skyTop: new THREE.Color('#477fa8'),
+    skyHorizon: new THREE.Color('#cce4e2'),
+    sunColor: new THREE.Color('#f2f6e6'),
+    sunGlow: 0.54,
+    sunElevation: 0.3,
+    sunAzimuth: -0.56,
+    fogColor: new THREE.Color('#c6dedc'),
+    fogDensity: 0.0046,
+    hemiSky: new THREE.Color('#dfeef2'),
+    hemiGround: new THREE.Color('#4a664b'),
+    hemiIntensity: 1.04,
+    keyColor: new THREE.Color('#f2f7ec'),
+    keyIntensity: 1.46,
   },
-  // Serene riverside listening cove
+  // Listening Alcove
   listening_alcove: {
     id: 'listening_alcove',
-    skyTop: new THREE.Color('#4a83b0'),
-    skyHorizon: new THREE.Color('#d2ece6'),
-    sunColor: new THREE.Color('#fff2cf'),
-    sunGlow: 0.7,
-    sunElevation: 0.27,
-    sunAzimuth: 0.55,
-    fogColor: new THREE.Color('#cce4df'),
-    fogDensity: 0.0046,
-    hemiSky: new THREE.Color('#e2f4f0'),
-    hemiGround: new THREE.Color('#516645'),
-    hemiIntensity: 1.12,
-    keyColor: new THREE.Color('#fff0d6'),
-    keyIntensity: 1.68,
+    skyTop: new THREE.Color('#4b87b8'),
+    skyHorizon: new THREE.Color('#dcefe4'),
+    sunColor: new THREE.Color('#fff3d4'),
+    sunGlow: 0.76,
+    sunElevation: 0.33,
+    sunAzimuth: -0.58,
+    fogColor: new THREE.Color('#d2e6da'),
+    fogDensity: 0.0038,
+    hemiSky: new THREE.Color('#e5f3f7'),
+    hemiGround: new THREE.Color('#596c3c'),
+    hemiIntensity: 1.1,
+    keyColor: new THREE.Color('#fff4dc'),
+    keyIntensity: 1.62,
   },
-  // Sunlit personal sanctuary garden with flowers & calm terrace
+  // Personal Garden Terrace
   personal_garden: {
     id: 'personal_garden',
-    skyTop: new THREE.Color('#4c90c2'),
-    skyHorizon: new THREE.Color('#e4f2dd'),
-    sunColor: new THREE.Color('#fff4c8'),
-    sunGlow: 0.78,
-    sunElevation: 0.35,
-    sunAzimuth: -0.3,
-    fogColor: new THREE.Color('#d7ebd9'),
-    fogDensity: 0.0042,
-    hemiSky: new THREE.Color('#eef8ef'),
-    hemiGround: new THREE.Color('#5a6d3c'),
-    hemiIntensity: 1.18,
-    keyColor: new THREE.Color('#fff4d6'),
-    keyIntensity: 1.82,
+    skyTop: new THREE.Color('#528ec0'),
+    skyHorizon: new THREE.Color('#e4f2de'),
+    sunColor: new THREE.Color('#fff6d8'),
+    sunGlow: 0.8,
+    sunElevation: 0.36,
+    sunAzimuth: -0.6,
+    fogColor: new THREE.Color('#d7eadb'),
+    fogDensity: 0.0035,
+    hemiSky: new THREE.Color('#eaf5f7'),
+    hemiGround: new THREE.Color('#5f733e'),
+    hemiIntensity: 1.14,
+    keyColor: new THREE.Color('#fff6df'),
+    keyIntensity: 1.68,
   },
 };
 
@@ -214,16 +214,15 @@ export interface BlendedAtmosphere {
   keyIntensity: number;
 }
 
-const _rainTintTop = new THREE.Color('#4d6973');
-const _rainTintHor = new THREE.Color('#aac3be');
-const _nightTintTop = new THREE.Color('#1f2c48');
-const _nightTintHor = new THREE.Color('#6a7f99');
-const _mistTintHor = new THREE.Color('#dceae4');
+const _rainTintTop = new THREE.Color('#4e687e');
+const _rainTintHor = new THREE.Color('#c2d6d8');
+const _nightTintTop = new THREE.Color('#182b49');
+const _nightTintHor = new THREE.Color('#476b8a');
+const _mistTintHor = new THREE.Color('#e2efe9');
 
 /**
  * Smoothly blends zone atmospheric moods based on avatar world XZ position,
- * then applies subtle weatherMode modifiers so moving between corners transforms
- * the light, sky sunset/emerald palette, sun height, and mist organically.
+ * preserving the clear sunlit blue sky, emerald meadow greens, and sea-of-clouds haze.
  */
 export function computeTargetAtmosphere(
   avatarX: number,
@@ -252,7 +251,6 @@ export function computeTargetAtmosphere(
     const preset = ZONE_ATMOSPHERE_PRESETS[zone.id];
     if (!preset) continue;
     const dist = Math.hypot(avatarX - zone.position.x, avatarZ - zone.position.z);
-    // Smooth Gaussian-like influence so entering a zone (~8m) strongly reflects its mood
     const w = 1 / (1 + Math.pow(dist / 13.5, 2.35));
     weightSum += w;
 
@@ -285,36 +283,49 @@ export function computeTargetAtmosphere(
   out.sunGlow = sunGlowAcc * inv;
   const sunElev = sunElevAcc * inv;
   const sunAzim = Math.atan2(sunAzimSin * inv, sunAzimCos * inv);
-  out.sunDir
-    .set(Math.sin(sunAzim) * Math.cos(sunElev), Math.sin(sunElev), -Math.cos(sunAzim) * Math.cos(sunElev))
-    .normalize();
   out.fogDensity = fogDensAcc * inv;
   out.hemiIntensity = hemiIntAcc * inv;
   out.keyIntensity = keyIntAcc * inv;
 
-  // Apply gentle weather overlays on top of zone atmosphere
+  // Bright azure-mint coastal breeze near SE sky lagoon (x > 24, z > 38)
+  const coastDist = Math.hypot(avatarX - 38, avatarZ - 47);
+  if (coastDist < 26) {
+    const coastWeight = (1 - THREE.MathUtils.clamp(coastDist / 26, 0, 1)) * 0.55;
+    out.skyTop.lerp(new THREE.Color('#3f8ec4'), coastWeight);
+    out.skyHorizon.lerp(new THREE.Color('#cceef6'), coastWeight);
+    out.fogColor.lerp(new THREE.Color('#cce8ec'), coastWeight);
+    out.sunColor.lerp(new THREE.Color('#fff5d6'), coastWeight);
+    out.keyColor.lerp(new THREE.Color('#fff6e0'), coastWeight);
+    out.sunGlow = THREE.MathUtils.lerp(out.sunGlow, 0.84, coastWeight);
+    out.fogDensity = THREE.MathUtils.lerp(out.fogDensity, 0.0033, coastWeight);
+  }
+
+  out.sunDir
+    .set(Math.sin(sunAzim) * Math.cos(sunElev), Math.sin(sunElev), -Math.cos(sunAzim) * Math.cos(sunElev))
+    .normalize();
+
   if (weatherMode === 'rain') {
-    out.skyTop.lerp(_rainTintTop, 0.55);
-    out.skyHorizon.lerp(_rainTintHor, 0.55);
-    out.fogColor.lerp(_rainTintHor, 0.55);
-    out.fogDensity = Math.max(out.fogDensity, 0.0064);
-    out.sunGlow *= 0.32;
-    out.keyIntensity *= 0.72;
+    out.skyTop.lerp(_rainTintTop, 0.52);
+    out.skyHorizon.lerp(_rainTintHor, 0.52);
+    out.fogColor.lerp(_rainTintHor, 0.52);
+    out.fogDensity = Math.max(out.fogDensity, 0.0052);
+    out.sunGlow *= 0.4;
+    out.keyIntensity *= 0.78;
   } else if (weatherMode === 'mist') {
-    out.skyHorizon.lerp(_mistTintHor, 0.45);
-    out.fogColor.lerp(_mistTintHor, 0.5);
-    out.fogDensity = Math.max(out.fogDensity, 0.0076);
-    out.sunGlow *= 0.65;
+    out.skyHorizon.lerp(_mistTintHor, 0.48);
+    out.fogColor.lerp(_mistTintHor, 0.54);
+    out.fogDensity = Math.max(out.fogDensity, 0.0062);
+    out.sunGlow *= 0.72;
   } else if (weatherMode === 'fireflies') {
-    out.skyTop.lerp(_nightTintTop, 0.72);
-    out.skyHorizon.lerp(_nightTintHor, 0.62);
-    out.fogColor.lerp(_nightTintHor, 0.62);
-    out.fogDensity = Math.max(out.fogDensity, 0.0056);
+    out.skyTop.lerp(_nightTintTop, 0.68);
+    out.skyHorizon.lerp(_nightTintHor, 0.58);
+    out.fogColor.lerp(_nightTintHor, 0.58);
+    out.fogDensity = Math.max(out.fogDensity, 0.0048);
     out.sunColor.set('#fef3c7');
     out.sunGlow = 0.55;
-    out.hemiSky.set('#a8bad6');
+    out.hemiSky.set('#8ab4d8');
     out.hemiIntensity *= 0.78;
     out.keyColor.set('#dbeafe');
-    out.keyIntensity *= 0.62;
+    out.keyIntensity *= 0.68;
   }
 }

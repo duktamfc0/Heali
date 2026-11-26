@@ -1,10 +1,62 @@
 import * as THREE from 'three';
 import type { WorldZone } from '../WorldEnvironment';
 
-export const VALLEY_PLAYABLE_RADIUS = 72;
+export const VALLEY_PLAYABLE_RADIUS = 78;
 export const LAKE_CENTER = { x: 0, z: 34 };
 export const LAKE_RADIUS_X = 18.5;
 export const LAKE_RADIUS_Z = 14.5;
+
+export interface VietnameseRegionPreset {
+  id: 'mien_que' | 'mien_nui' | 'mien_bien' | 'yen_binh';
+  label: string;
+  subtitle: string;
+  x: number;
+  z: number;
+  yaw: number;
+}
+
+export const VIETNAMESE_REGION_PRESETS: VietnameseRegionPreset[] = [
+  {
+    id: 'mien_que',
+    label: 'Miền Quê',
+    subtitle: 'Đồng lúa · Lũy tre · Đầm sen',
+    x: -17.5,
+    z: 8.2,
+    yaw: 0.35,
+  },
+  {
+    id: 'mien_nui',
+    label: 'Miền Núi',
+    subtitle: 'Tam Cốc · Ruộng bậc thang · Thác sương',
+    x: 6.5,
+    z: -24.5,
+    yaw: -0.25,
+  },
+  {
+    id: 'mien_bien',
+    label: 'Miền Biển',
+    subtitle: 'Vịnh ngọc · Hàng dừa · Thuyền thúng',
+    x: 37.3,
+    z: 45.2,
+    yaw: -0.18,
+  },
+  {
+    id: 'yen_binh',
+    label: 'Yên Bình',
+    subtitle: 'Hồ Hoa Đăng · Đèn lồng Hội An',
+    x: -2.2,
+    z: 22.8,
+    yaw: 0.15,
+  },
+];
+
+export function isCoastalBayArea(x: number, z: number): boolean {
+  return x > 24 && z > 42;
+}
+
+export function isRicePaddyArea(x: number, z: number): boolean {
+  return x > -27.5 && x < -10.5 && z > 8.2 && z < 18.2;
+}
 
 /**
  * Analytical meandering stream center X(z) flowing from NE mountain cascade (z=-55)
@@ -97,6 +149,7 @@ const BUILDING_PADS: BuildingPad[] = [
   { x: 44, z: -22, targetY: 1.55, flatRadius: 4.5, blendRadius: 9.5 },      // Goc Gap Go (Bamboo Tea Pavilion)
   { x: 40, z: 12, targetY: 1.12, flatRadius: 4.8, blendRadius: 9.5 },       // Buu Dien Ky Uc
   { x: 26, z: 32, targetY: 0.72, flatRadius: 4.5, blendRadius: 8.8 },       // Can Phong Mua (Lakeshore Conservatory)
+  { x: -19, z: 13, targetY: 0.52, flatRadius: 7.5, blendRadius: 12.0 },     // Mien Que Rice Paddy Basin
 ];
 
 function smoothstep(edge0: number, edge1: number, x: number): number {
@@ -131,12 +184,16 @@ export function groundHeightAt(x: number, z: number): number {
     y += mound;
   }
 
-  // Outer perimeter foothill rise (for r > 60) framing the open valley naturally
+  // Outer perimeter foothill rise (for r > 60), leaving SE coastal bay arc open to the ocean!
   const rCenter = Math.hypot(x, z);
+  const angle = Math.atan2(z, x); // SE coastal bay is around angle +0.55 .. +1.28 rad
+  const coastGapWeight =
+    1 -
+    smoothstep(0.28, 0.58, angle) * (1 - smoothstep(1.18, 1.48, angle));
   if (rCenter > 56) {
     const rimT = smoothstep(56, 98, rCenter);
-    const peakWave = 1 + 0.35 * Math.sin(Math.atan2(z, x) * 5 + 1.1) + 0.2 * Math.cos(x * 0.08);
-    y += rimT * rimT * 14.5 * peakWave;
+    const peakWave = 1 + 0.35 * Math.sin(angle * 5 + 1.1) + 0.2 * Math.cos(x * 0.08);
+    y += rimT * rimT * 14.5 * peakWave * coastGapWeight;
   }
 
   // Smooth building terrace pads
@@ -164,16 +221,30 @@ export function groundHeightAt(x: number, z: number): number {
     y = THREE.MathUtils.lerp(y, -1.25, basinT);
   }
 
+  // Carve Mien Bien South-East Golden Sandy Beach & Emerald Ocean Bay (x > 24, z > 40)
+  if (x > 20 && z > 38) {
+    const eastW = smoothstep(22, 34, x);
+    const shoreZ = 49.5 + Math.sin(x * 0.09) * 2.2;
+    const beachSlope = smoothstep(38, shoreZ + 9, z);
+    const coastDepth = THREE.MathUtils.lerp(0.62, -1.65, beachSlope);
+    y = THREE.MathUtils.lerp(y, coastDepth, eastW * 0.92);
+  }
+
   return y;
 }
 
 /**
- * Returns deck height if (x, z) is standing on the Lake Pier or either Arched Wooden Bridge.
+ * Returns deck height if (x, z) is standing on the Lake Pier, Coastal Jetty, or Arched Wooden Bridges.
  */
 export function walkableSurfaceHeightAt(x: number, z: number): number {
   // 1. Check Lakeside Wooden Pier: x in [-1.25, 1.25], z in [19.4, 26.8]
   if (Math.abs(x) <= 1.25 && z >= 19.2 && z <= 27.0) {
     return 0.42;
+  }
+
+  // 1B. Check Mien Bien Coastal Timber Jetty: x in [36.0, 38.6], z in [45.2, 53.6]
+  if (x >= 36.0 && x <= 38.6 && z >= 45.2 && z <= 53.6) {
+    return 0.46;
   }
 
   // 2. Check Arched Wooden Bridges
@@ -195,6 +266,7 @@ export function walkableSurfaceHeightAt(x: number, z: number): number {
 
 export function isOnBridgeOrPier(x: number, z: number): boolean {
   if (Math.abs(x) <= 1.25 && z >= 19.2 && z <= 27.0) return true;
+  if (x >= 36.0 && x <= 38.6 && z >= 45.2 && z <= 53.6) return true;
   for (const b of WORLD_BRIDGES) {
     const dx = x - b.x;
     const dz = z - b.z;
@@ -213,7 +285,7 @@ export const SANCTUARY_ZONES: WorldZone[] = [
   {
     id: 'journal',
     name: 'Nhà nhật ký',
-    subtitle: 'Gian phòng gỗ ấm áp giữa đồng hoa',
+    subtitle: 'Yên Bình · Nhà gỗ cổ mái ngói âm dương & đèn lồng',
     position: new THREE.Vector3(0, 0, 0.2),
     radius: 4.2,
     promptText: 'Ghé vào nhà',
@@ -222,7 +294,7 @@ export const SANCTUARY_ZONES: WorldZone[] = [
   {
     id: 'lake',
     name: 'Hồ hoa đăng',
-    subtitle: 'Thả trôi ưu phiền & gửi gắm lời nguyện cầu',
+    subtitle: 'Yên Bình · Mặt hồ sen Hội An thả trôi ưu phiền',
     position: new THREE.Vector3(0, 0, 23.5),
     radius: 4.4,
     promptText: 'Thả hoa đăng',
@@ -231,7 +303,7 @@ export const SANCTUARY_ZONES: WorldZone[] = [
   {
     id: 'community',
     name: 'Vườn tâm tình',
-    subtitle: 'Đồi hoa oải hương & sẻ chia ẩn danh',
+    subtitle: 'Miền Quê · Đình làng lục giác bên đồng lúa & lũy tre',
     position: new THREE.Vector3(-32, 0, -2),
     radius: 4.8,
     promptText: 'Vào khu vườn',
@@ -240,7 +312,7 @@ export const SANCTUARY_ZONES: WorldZone[] = [
   {
     id: 'wishes',
     name: 'Cây ước nguyện',
-    subtitle: 'Cội cổ thụ ven hồ & dải lụa cam kết',
+    subtitle: 'Miền Quê · Cây đa cổ thụ đầu làng & dải lụa ước lành',
     position: new THREE.Vector3(-28, 0, 24),
     radius: 4.8,
     promptText: 'Treo thẻ ước',
@@ -249,7 +321,7 @@ export const SANCTUARY_ZONES: WorldZone[] = [
   {
     id: 'spiritual_room',
     name: 'Phòng tâm linh',
-    subtitle: 'Đài thiền trên đồi thông nhìn xuống thung lũng',
+    subtitle: 'Miền Núi · Chùa đá trên non cao giữa mây sương Tam Cốc',
     position: new THREE.Vector3(-16, 0, -34),
     radius: 4.6,
     promptText: 'Vào phòng tâm linh',
@@ -258,7 +330,7 @@ export const SANCTUARY_ZONES: WorldZone[] = [
   {
     id: 'stranger_chat',
     name: 'Góc gặp gỡ',
-    subtitle: 'Trà thất bên suối trúc & trò chuyện 1:1',
+    subtitle: 'Miền Núi · Nhà sàn bên suối trúc & ruộng bậc thang',
     position: new THREE.Vector3(44, 0, -22),
     radius: 4.6,
     promptText: 'Trò chuyện ngay',
@@ -267,7 +339,7 @@ export const SANCTUARY_ZONES: WorldZone[] = [
   {
     id: 'letters',
     name: 'Bưu điện ký ức',
-    subtitle: 'Ngôi nhà bên vườn đào & hòm thư chưa gửi',
+    subtitle: 'Miền Biển · Nhà gỗ ven vịnh ngọc & vườn đào nắng ấm',
     position: new THREE.Vector3(40, 0, 12),
     radius: 4.6,
     promptText: 'Viết thư chưa gửi',
@@ -276,7 +348,7 @@ export const SANCTUARY_ZONES: WorldZone[] = [
   {
     id: 'rain_room',
     name: 'Căn phòng mưa',
-    subtitle: 'Nhà kính bên vịnh liễu & thanh âm mưa rơi',
+    subtitle: 'Miền Biển · Nhà kính đón gió vịnh biển, hàng dừa & tiếng mưa',
     position: new THREE.Vector3(26, 0, 32),
     radius: 4.6,
     promptText: 'Nghe thanh âm',

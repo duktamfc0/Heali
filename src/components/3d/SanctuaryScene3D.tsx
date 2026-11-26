@@ -91,6 +91,7 @@ export const SanctuaryScene3D: React.FC<SanctuaryScene3DProps> = ({
   children,
 }) => {
   const mountRef = useRef<HTMLDivElement>(null);
+  const requestStaticRedrawRef = useRef<(() => void) | null>(null);
   const [webglUnavailable, setWebglUnavailable] = useState(false);
   const [pureView, setPureView] = useState(false);
 
@@ -108,48 +109,50 @@ export const SanctuaryScene3D: React.FC<SanctuaryScene3DProps> = ({
       breathRunning,
       activeEffect,
     };
+    requestStaticRedrawRef.current?.();
   }, [moodScore, breathPhase, breathRunning, activeEffect]);
 
   const prefersReducedMotion =
     typeof window !== 'undefined' &&
     Boolean(window.matchMedia?.('(prefers-reduced-motion: reduce)').matches);
 
-  const shouldUseStaticFallback = lowMotion || prefersReducedMotion || webglUnavailable;
+  const staticRenderOnly = lowMotion || prefersReducedMotion;
 
   useEffect(() => {
-    if (shouldUseStaticFallback) return;
+    if (webglUnavailable) return;
     const container = mountRef.current;
     if (!container) return;
 
     let renderer: THREE.WebGLRenderer | null = null;
     try {
-      const probeCanvas = document.createElement('canvas');
-      const probeCtx =
-        probeCanvas.getContext('webgl2', { powerPreference: 'default' }) ||
-        probeCanvas.getContext('webgl', { powerPreference: 'default' });
-      if (!probeCtx) {
+      renderer = new THREE.WebGLRenderer({
+        antialias: !staticRenderOnly,
+        alpha: false,
+        powerPreference: 'default',
+      });
+      const glCtx = renderer.getContext();
+      if (!glCtx) {
+        renderer.dispose();
         setWebglUnavailable(true);
         return;
       }
-      const softwareGl = detectSoftwareWebGL(probeCtx);
 
-      renderer = new THREE.WebGLRenderer({
-        antialias: !softwareGl,
-        alpha: false,
-        powerPreference: softwareGl ? 'low-power' : 'high-performance',
-      });
+      const softwareGl = detectSoftwareWebGL(glCtx);
       renderer.toneMapping = THREE.ACESFilmicToneMapping;
       renderer.toneMappingExposure = 1.0;
       renderer.outputColorSpace = THREE.SRGBColorSpace;
       renderer.setPixelRatio(softwareGl ? 1 : Math.min(window.devicePixelRatio || 1, 2));
 
-      const width = Math.max(container.clientWidth, 320);
-      const height = Math.max(container.clientHeight, 200);
+      const width = Math.max(container.clientWidth || container.parentElement?.clientWidth || 0, 320);
+      const height = Math.max(container.clientHeight || container.parentElement?.clientHeight || 0, 210);
       renderer.setSize(width, height, false);
-      renderer.domElement.style.width = '100%';
-      renderer.domElement.style.height = '100%';
-      renderer.domElement.style.display = 'block';
-      container.replaceChildren(renderer.domElement);
+      const canvasEl = renderer.domElement;
+      canvasEl.style.position = 'absolute';
+      canvasEl.style.inset = '0';
+      canvasEl.style.width = '100%';
+      canvasEl.style.height = '100%';
+      canvasEl.style.display = 'block';
+      container.replaceChildren(canvasEl);
 
       const vault = new TextureVault();
       const built = buildSanctuaryScene(variant, vault, softwareGl);
@@ -159,15 +162,30 @@ export const SanctuaryScene3D: React.FC<SanctuaryScene3DProps> = ({
       scene.fog = new THREE.FogExp2(built.fogColor, built.fogDensity);
       scene.add(built.root);
 
-      const pmrem = new THREE.PMREMGenerator(renderer);
-      const roomEnv = new RoomEnvironment();
-      const envRT = pmrem.fromScene(roomEnv, 0.04);
-      scene.environment = envRT.texture;
-      scene.environmentIntensity = 0.55;
+      let pmrem: THREE.PMREMGenerator | null = null;
+      let roomEnv: RoomEnvironment | null = null;
+      let envRT: THREE.WebGLRenderTarget | null = null;
+      try {
+        pmrem = new THREE.PMREMGenerator(renderer);
+        roomEnv = new RoomEnvironment();
+        envRT = pmrem.fromScene(roomEnv, 0.04);
+        scene.environment = envRT.texture;
+        scene.environmentIntensity = 0.55;
+      } catch {
+        // Fallback cleanly to directional + hemisphere scene lighting
+      }
 
       const camera = new THREE.PerspectiveCamera(built.fov, width / height, 0.1, 100);
       camera.position.copy(built.cameraPosition);
       camera.lookAt(built.cameraTarget);
+
+      if (!softwareGl) {
+        try {
+          renderer.compile(scene, camera);
+        } catch {
+          // Non-fatal pre-warm failure
+        }
+      }
 
       // Smooth pointer parallax + drag orbit
       let targetYaw = 0;
@@ -177,6 +195,49 @@ export const SanctuaryScene3D: React.FC<SanctuaryScene3DProps> = ({
       let isDragging = false;
       let lastX = 0;
       let lastY = 0;
+
+      const baseOffset = built.cameraPosition.clone().sub(built.cameraTarget);
+      const radius = baseOffset.length();
+      const baseTheta = Math.atan2(baseOffset.x, baseOffset.z);
+      const basePhi = Math.acos(THREE.MathUtils.clamp(baseOffset.y / radius, -0.95, 0.95));
+
+      let rafId = 0;
+      let timeoutId = 0;
+      let disposed = false;
+      let contextLost = false;
+      let prevTime = performance.now();
+      const startTime = prevTime;
+
+      const drawFrame = (dt: number, elapsed: number, sway = true) => {
+        if (disposed || contextLost || !renderer) return;
+        currentYaw = THREE.MathUtils.damp(currentYaw, targetYaw, 5, dt);
+        currentPitch = THREE.MathUtils.damp(currentPitch, targetPitch, 5, dt);
+
+        const theta = baseTheta + currentYaw + (sway ? Math.sin(elapsed * 0.18) * 0.03 : 0);
+        const phi = THREE.MathUtils.clamp(basePhi + currentPitch, 0.38, 1.38);
+
+        camera.position.set(
+          built.cameraTarget.x + radius * Math.sin(phi) * Math.sin(theta),
+          built.cameraTarget.y + radius * Math.cos(phi),
+          built.cameraTarget.z + radius * Math.sin(phi) * Math.cos(theta)
+        );
+        camera.lookAt(built.cameraTarget);
+
+        built.update(dt, elapsed, liveRef.current);
+        renderer.render(scene, camera);
+      };
+
+      // Draw frame 0 immediately so every tab displays its 3D scenery without blank delay
+      drawFrame(0.016, 0, !staticRenderOnly);
+
+      const requestStaticRedraw = () => {
+        if (!staticRenderOnly || disposed || contextLost) return;
+        window.cancelAnimationFrame(rafId);
+        rafId = window.requestAnimationFrame(() => {
+          drawFrame(0.05, 0, false);
+        });
+      };
+      requestStaticRedrawRef.current = requestStaticRedraw;
 
       const onPointerDown = (e: PointerEvent) => {
         isDragging = true;
@@ -192,7 +253,8 @@ export const SanctuaryScene3D: React.FC<SanctuaryScene3DProps> = ({
           lastY = e.clientY;
           targetYaw = THREE.MathUtils.clamp(targetYaw - dx * 0.0055, -0.75, 0.75);
           targetPitch = THREE.MathUtils.clamp(targetPitch + dy * 0.0035, -0.25, 0.35);
-        } else if (rect.width > 0 && rect.height > 0) {
+          if (staticRenderOnly) requestStaticRedraw();
+        } else if (!staticRenderOnly && rect.width > 0 && rect.height > 0) {
           const nx = ((e.clientX - rect.left) / rect.width - 0.5) * 2;
           const ny = ((e.clientY - rect.top) / rect.height - 0.5) * 2;
           targetYaw = THREE.MathUtils.clamp(-nx * 0.16, -0.35, 0.35);
@@ -206,27 +268,27 @@ export const SanctuaryScene3D: React.FC<SanctuaryScene3DProps> = ({
         isDragging = false;
         targetYaw = 0;
         targetPitch = 0;
+        if (staticRenderOnly) requestStaticRedraw();
       };
 
-      const canvasEl = renderer.domElement;
       canvasEl.addEventListener('pointerdown', onPointerDown);
       canvasEl.addEventListener('pointermove', onPointerMove);
       window.addEventListener('pointerup', onPointerUp);
       canvasEl.addEventListener('pointerleave', onPointerLeave);
 
-      let contextLost = false;
       const handleContextLost = (e: Event) => {
         e.preventDefault();
         contextLost = true;
       };
       const handleContextRestored = () => {
         contextLost = false;
+        drawFrame(0.016, (performance.now() - startTime) / 1000, !staticRenderOnly);
       };
       canvasEl.addEventListener('webglcontextlost', handleContextLost);
       canvasEl.addEventListener('webglcontextrestored', handleContextRestored);
 
       const resizeObserver = new ResizeObserver((entries) => {
-        if (!renderer) return;
+        if (disposed || !renderer) return;
         const entry = entries[0];
         if (!entry) return;
         const w = Math.max(Math.round(entry.contentRect.width), 200);
@@ -234,57 +296,63 @@ export const SanctuaryScene3D: React.FC<SanctuaryScene3DProps> = ({
         camera.aspect = w / h;
         camera.updateProjectionMatrix();
         renderer.setSize(w, h, false);
+        drawFrame(0.016, (performance.now() - startTime) / 1000, !staticRenderOnly);
       });
       resizeObserver.observe(container);
 
-      const baseOffset = built.cameraPosition.clone().sub(built.cameraTarget);
-      const radius = baseOffset.length();
-      const baseTheta = Math.atan2(baseOffset.x, baseOffset.z);
-      const basePhi = Math.acos(THREE.MathUtils.clamp(baseOffset.y / radius, -0.95, 0.95));
-
-      let rafId = 0;
-      let disposed = false;
-      let prevTime = performance.now();
-      let lastDrawAt = 0;
-      const startTime = prevTime;
-
-      const animate = (now: number) => {
-        if (disposed) return;
-        rafId = window.requestAnimationFrame(animate);
-        if (contextLost || !renderer) return;
-
-        // Pace software WebGL cleanly (~12fps) so browser main thread stays snappy
-        if (softwareGl && now - lastDrawAt < 80) {
-          return;
+      const afterSoftwareDraw = (cb: () => void) => {
+        const gl2 = renderer?.getContext() as WebGL2RenderingContext | null;
+        if (gl2 && typeof gl2.fenceSync === 'function') {
+          const sync = gl2.fenceSync(gl2.SYNC_GPU_COMMANDS_COMPLETE, 0);
+          gl2.flush();
+          const poll = () => {
+            if (disposed) {
+              if (sync) gl2.deleteSync(sync);
+              return;
+            }
+            const state = sync ? gl2.getSyncParameter(sync, gl2.SYNC_STATUS) : gl2.ALREADY_SIGNALED;
+            if (state === gl2.UNSIGNALED) {
+              timeoutId = window.setTimeout(poll, 5);
+            } else {
+              if (sync) gl2.deleteSync(sync);
+              timeoutId = window.setTimeout(cb, 80);
+            }
+          };
+          timeoutId = window.setTimeout(poll, 5);
+        } else {
+          timeoutId = window.setTimeout(cb, 80);
         }
-        lastDrawAt = now;
-
-        const dt = Math.min(0.08, Math.max(0.001, (now - prevTime) / 1000));
-        prevTime = now;
-        const elapsed = (now - startTime) / 1000;
-
-        currentYaw = THREE.MathUtils.damp(currentYaw, targetYaw, 5, dt);
-        currentPitch = THREE.MathUtils.damp(currentPitch, targetPitch, 5, dt);
-
-        const theta = baseTheta + currentYaw + Math.sin(elapsed * 0.18) * 0.03;
-        const phi = THREE.MathUtils.clamp(basePhi + currentPitch, 0.38, 1.38);
-
-        camera.position.set(
-          built.cameraTarget.x + radius * Math.sin(phi) * Math.sin(theta),
-          built.cameraTarget.y + radius * Math.cos(phi),
-          built.cameraTarget.z + radius * Math.sin(phi) * Math.cos(theta)
-        );
-        camera.lookAt(built.cameraTarget);
-
-        built.update(dt, elapsed, liveRef.current);
-        renderer.render(scene, camera);
       };
 
-      rafId = window.requestAnimationFrame(animate);
+      const animate = (now: number) => {
+        if (disposed || staticRenderOnly) return;
+        if (!contextLost && renderer) {
+          const dt = Math.min(0.08, Math.max(0.001, (now - prevTime) / 1000));
+          prevTime = now;
+          const elapsed = (now - startTime) / 1000;
+          drawFrame(dt, elapsed, true);
+        }
+
+        if (softwareGl) {
+          afterSoftwareDraw(() => {
+            if (!disposed) {
+              rafId = window.requestAnimationFrame(animate);
+            }
+          });
+        } else {
+          rafId = window.requestAnimationFrame(animate);
+        }
+      };
+
+      if (!staticRenderOnly) {
+        rafId = window.requestAnimationFrame(animate);
+      }
 
       return () => {
         disposed = true;
+        requestStaticRedrawRef.current = null;
         window.cancelAnimationFrame(rafId);
+        window.clearTimeout(timeoutId);
         resizeObserver.disconnect();
         canvasEl.removeEventListener('pointerdown', onPointerDown);
         canvasEl.removeEventListener('pointermove', onPointerMove);
@@ -294,9 +362,16 @@ export const SanctuaryScene3D: React.FC<SanctuaryScene3DProps> = ({
         canvasEl.removeEventListener('webglcontextrestored', handleContextRestored);
         built.dispose();
         vault.disposeAll();
-        envRT.dispose();
-        roomEnv.dispose();
-        pmrem.dispose();
+        envRT?.dispose();
+        roomEnv?.dispose();
+        pmrem?.dispose();
+        if (!contextLost) {
+          try {
+            renderer?.forceContextLoss();
+          } catch {
+            // ignore context loss errors during teardown
+          }
+        }
         renderer?.dispose();
         container.replaceChildren();
       };
@@ -304,17 +379,17 @@ export const SanctuaryScene3D: React.FC<SanctuaryScene3DProps> = ({
       renderer?.dispose();
       setWebglUnavailable(true);
     }
-  }, [variant, shouldUseStaticFallback]);
+  }, [variant, staticRenderOnly, webglUnavailable]);
 
   const palette = STATIC_DIORAMA_PALETTE[variant];
 
   return (
     <div
-      className={`relative overflow-hidden rounded-[28px] border border-[#2d3e31]/70 dark:border-[#324236] bg-[#121c15] shadow-md select-none ${className}`}
+      className={`relative overflow-hidden rounded-[28px] border border-[#2d3e31]/70 dark:border-[#324236] bg-[#121c15] shadow-md select-none min-h-[210px] ${className}`}
       style={{ touchAction: 'pan-y' }}
     >
       {/* WebGL Mount Layer OR Graceful Static Atmospheric Diorama Fallback */}
-      {shouldUseStaticFallback ? (
+      {webglUnavailable ? (
         <div
           aria-hidden="true"
           className={`absolute inset-0 bg-gradient-to-br ${palette.bg}`}
@@ -332,7 +407,7 @@ export const SanctuaryScene3D: React.FC<SanctuaryScene3DProps> = ({
         <div
           ref={mountRef}
           aria-hidden="true"
-          className={`absolute inset-0 transition-opacity duration-500 ${
+          className={`absolute inset-0 z-0 w-full h-full transition-opacity duration-500 ${
             dimmed ? 'opacity-20' : 'opacity-100'
           }`}
         />
@@ -343,7 +418,7 @@ export const SanctuaryScene3D: React.FC<SanctuaryScene3DProps> = ({
         aria-hidden="true"
         className={
           scrimClassName ||
-          'absolute inset-0 pointer-events-none bg-gradient-to-t from-[#0d1812]/82 via-[#101d16]/34 to-transparent'
+          'absolute inset-0 z-[1] pointer-events-none bg-gradient-to-t from-[#0d1812]/82 via-[#101d16]/34 to-transparent'
         }
       />
 

@@ -404,146 +404,222 @@ export function getParquetFloorTexture(): THREE.CanvasTexture {
 export function getCozyRugTexture(): THREE.CanvasTexture {
   if (textureCache['cozy_rug']) return textureCache['cozy_rug'];
 
-  const { canvas, ctx } = createOffscreen(512, 512);
+  const { canvas, ctx } = createOffscreen(1024, 1024);
 
-  // Soft cream / oatmeal base
-  ctx.fillStyle = '#dfd6c8';
-  ctx.fillRect(0, 0, 512, 512);
+  // Soft cream / oatmeal woven base
+  ctx.fillStyle = '#ddd3c4';
+  ctx.fillRect(0, 0, 1024, 1024);
 
-  // Fleece texture fibers
-  for (let i = 0; i < 4000; i++) {
-    const rx = Math.random() * 512;
-    const ry = Math.random() * 512;
-    ctx.fillStyle = Math.random() > 0.5 ? '#f5eee3' : '#cebeaa';
-    ctx.beginPath();
-    ctx.arc(rx, ry, Math.random() * 2 + 1, 0, Math.PI * 2);
-    ctx.fill();
+  // Crisp weft & warp woven threads
+  for (let y = 0; y < 1024; y += 6) {
+    ctx.fillStyle = y % 12 === 0 ? 'rgba(246, 240, 230, 0.32)' : 'rgba(186, 170, 150, 0.24)';
+    ctx.fillRect(0, y, 1024, 2);
+  }
+  for (let i = 0; i < 6500; i++) {
+    const rx = ((i * 733) % 1024);
+    const ry = ((i * 419) % 1024);
+    ctx.fillStyle = i % 2 === 0 ? 'rgba(248, 242, 232, 0.42)' : 'rgba(195, 179, 160, 0.38)';
+    ctx.fillRect(rx, ry, 3, 2);
   }
 
-  // Woven muted charcoal diamond motifs
-  ctx.strokeStyle = '#7c6d60';
-  ctx.lineWidth = 3;
-  ctx.setLineDash([4, 4]);
+  // Woven muted charcoal & sage geometric diamond motifs
+  ctx.strokeStyle = '#736457';
+  ctx.lineWidth = 5;
+  ctx.setLineDash([8, 6]);
 
-  for (let y = 64; y <= 448; y += 128) {
-    for (let x = 64; x <= 448; x += 128) {
+  for (let y = 128; y <= 896; y += 256) {
+    for (let x = 128; x <= 896; x += 256) {
       ctx.beginPath();
-      ctx.moveTo(x, y - 48);
-      ctx.lineTo(x + 48, y);
-      ctx.lineTo(x, y + 48);
-      ctx.lineTo(x - 48, y);
+      ctx.moveTo(x, y - 92);
+      ctx.lineTo(x + 92, y);
+      ctx.lineTo(x, y + 92);
+      ctx.lineTo(x - 92, y);
+      ctx.closePath();
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.moveTo(x, y - 42);
+      ctx.lineTo(x + 42, y);
+      ctx.lineTo(x, y + 42);
+      ctx.lineTo(x - 42, y);
       ctx.closePath();
       ctx.stroke();
     }
   }
 
-  // Rug fringed border
+  // Outer double border + tasseled edge
   ctx.setLineDash([]);
-  ctx.strokeStyle = '#938274';
-  ctx.lineWidth = 8;
-  ctx.strokeRect(16, 16, 480, 480);
+  ctx.strokeStyle = '#8b7a6c';
+  ctx.lineWidth = 14;
+  ctx.strokeRect(28, 28, 968, 968);
+  ctx.strokeStyle = '#67584c';
+  ctx.lineWidth = 4;
+  ctx.strokeRect(52, 52, 920, 920);
 
   const texture = new THREE.CanvasTexture(canvas);
   texture.colorSpace = THREE.SRGBColorSpace;
+  texture.anisotropy = 8;
   textureCache['cozy_rug'] = texture;
   return texture;
 }
 
 /**
- * 9. Bookshelf Spines Texture
+ * 9. Bookshelf Spines Texture (High-Definition Gold-Foil Leather Spines)
  */
 export function getBookSpineTexture(): THREE.CanvasTexture {
   if (textureCache['book_spines']) return textureCache['book_spines'];
 
-  const { canvas, ctx } = createOffscreen(512, 256);
+  const { canvas, ctx } = createOffscreen(1024, 512);
 
-  ctx.fillStyle = '#26150e';
-  ctx.fillRect(0, 0, 512, 256);
+  ctx.fillStyle = '#20110b';
+  ctx.fillRect(0, 0, 1024, 512);
 
-  const colors = ['#831843', '#1e3a8a', '#14532d', '#78350f', '#3b0764', '#701a75', '#451a03', '#1f2937'];
-  let currentX = 8;
+  const colors = [
+    '#7f1d1d',
+    '#1e3a8a',
+    '#14532d',
+    '#78350f',
+    '#4c1d95',
+    '#701a75',
+    '#451a03',
+    '#1f2937',
+    '#0f5132',
+    '#92400e',
+  ];
+  let currentX = 12;
+  let idx = 0;
 
-  while (currentX < 500) {
-    const bookW = Math.random() * 16 + 18;
-    const bookH = 220 + Math.random() * 26;
-    const color = colors[Math.floor(Math.random() * colors.length)];
+  while (currentX < 1004) {
+    const bookW = 30 + ((idx * 17) % 28);
+    const bookH = 420 + ((idx * 31) % 72);
+    const color = colors[idx % colors.length];
+    const topY = 512 - bookH;
 
     ctx.fillStyle = color;
-    ctx.fillRect(currentX, 256 - bookH, bookW - 2, bookH);
+    ctx.fillRect(currentX, topY, bookW - 4, bookH);
 
-    // Gold foil ribs & title bands
-    ctx.fillStyle = '#f59e0b';
-    ctx.fillRect(currentX + 2, 256 - bookH + 20, bookW - 6, 3);
-    ctx.fillRect(currentX + 2, 256 - bookH + 28, bookW - 6, 2);
-    ctx.fillRect(currentX + 2, 256 - 35, bookW - 6, 2);
+    // Highlight spine curvature
+    const spineGrad = ctx.createLinearGradient(currentX, 0, currentX + bookW - 4, 0);
+    spineGrad.addColorStop(0, 'rgba(0,0,0,0.34)');
+    spineGrad.addColorStop(0.28, 'rgba(255,255,255,0.14)');
+    spineGrad.addColorStop(0.75, 'rgba(0,0,0,0.06)');
+    spineGrad.addColorStop(1, 'rgba(0,0,0,0.42)');
+    ctx.fillStyle = spineGrad;
+    ctx.fillRect(currentX, topY, bookW - 4, bookH);
 
-    // Spine shading
-    ctx.fillStyle = 'rgba(0,0,0,0.25)';
-    ctx.fillRect(currentX, 256 - bookH, 3, bookH);
-    ctx.fillRect(currentX + bookW - 4, 256 - bookH, 2, bookH);
+    // Gold foil ribs, title plate & filigree bands
+    ctx.fillStyle = '#eab308';
+    ctx.fillRect(currentX + 3, topY + 28, bookW - 10, 5);
+    ctx.fillRect(currentX + 3, topY + 40, bookW - 10, 3);
+    ctx.fillRect(currentX + 3, 512 - 58, bookW - 10, 4);
+    ctx.fillRect(currentX + 3, 512 - 44, bookW - 10, 3);
+
+    if (idx % 2 === 0) {
+      ctx.fillStyle = 'rgba(254, 240, 138, 0.85)';
+      ctx.fillRect(currentX + 6, topY + 64, bookW - 16, 46);
+      ctx.fillStyle = '#3b2314';
+      ctx.fillRect(currentX + 9, topY + 78, bookW - 22, 4);
+      ctx.fillRect(currentX + 9, topY + 90, bookW - 22, 4);
+    }
 
     currentX += bookW;
+    idx++;
   }
 
   const texture = new THREE.CanvasTexture(canvas);
   texture.colorSpace = THREE.SRGBColorSpace;
+  texture.anisotropy = 8;
   textureCache['book_spines'] = texture;
   return texture;
 }
 
 /**
- * 10. Open Journal Notebook Pages Texture
+ * 10. Open Journal Notebook Pages Texture (Crisp Ruled Parchment & Botanical Sketch)
  */
 export function getJournalPageTexture(): THREE.CanvasTexture {
   if (textureCache['journal_page']) return textureCache['journal_page'];
 
-  const { canvas, ctx } = createOffscreen(512, 384);
+  const { canvas, ctx } = createOffscreen(1024, 768);
 
   // Aged parchment background
   ctx.fillStyle = '#faf3e0';
-  ctx.fillRect(0, 0, 512, 384);
+  ctx.fillRect(0, 0, 1024, 768);
+
+  // Faint ruled lines
+  ctx.strokeStyle = 'rgba(138, 114, 90, 0.18)';
+  ctx.lineWidth = 2;
+  for (let y = 96; y < 688; y += 34) {
+    ctx.beginPath();
+    ctx.moveTo(72, y);
+    ctx.lineTo(460, y);
+    ctx.moveTo(564, y);
+    ctx.lineTo(952, y);
+    ctx.stroke();
+  }
 
   // Center seam spine shadow
-  const grad = ctx.createLinearGradient(230, 0, 282, 0);
+  const grad = ctx.createLinearGradient(460, 0, 564, 0);
   grad.addColorStop(0, 'rgba(0,0,0,0)');
-  grad.addColorStop(0.5, 'rgba(92,58,34,0.4)');
+  grad.addColorStop(0.5, 'rgba(92,58,34,0.44)');
   grad.addColorStop(1, 'rgba(0,0,0,0)');
   ctx.fillStyle = grad;
-  ctx.fillRect(230, 0, 52, 384);
+  ctx.fillRect(460, 0, 104, 768);
 
-  // Handwritten cursive text line silhouettes
-  ctx.fillStyle = '#6b4f3b';
-  // Left page lines
-  for (let y = 50; y < 340; y += 18) {
-    const lineWidth = Math.random() * 60 + 130;
-    ctx.fillRect(40, y, lineWidth, 2);
-    // Bullet / small sketch
-    if (y % 54 === 0) {
+  // Crisp handwritten ink line silhouettes
+  ctx.fillStyle = '#5c4230';
+  for (let i = 0, y = 90; y < 670; y += 34, i++) {
+    const lineWidth = 240 + ((i * 53) % 130);
+    ctx.fillRect(82, y, lineWidth, 4);
+    if (i % 3 === 0) {
       ctx.beginPath();
-      ctx.arc(32, y + 1, 2.5, 0, Math.PI * 2);
+      ctx.arc(64, y + 2, 5, 0, Math.PI * 2);
       ctx.fill();
     }
   }
 
-  // Right page lines
-  for (let y = 50; y < 340; y += 18) {
-    const lineWidth = Math.random() * 70 + 120;
-    ctx.fillRect(285, y, lineWidth, 2);
+  for (let i = 0, y = 90; y < 670; y += 34, i++) {
+    if (y > 460 && y < 620) continue; // reserve space for small leaf sketch
+    const lineWidth = 220 + ((i * 67) % 140);
+    ctx.fillRect(574, y, lineWidth, 4);
   }
+
+  // Pressed botanical leaf ink sketch on lower right page
+  ctx.strokeStyle = '#3f6244';
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.moveTo(720, 620);
+  ctx.quadraticCurveTo(750, 540, 825, 480);
+  ctx.stroke();
+  [
+    [742, 575, -0.5],
+    [770, 540, 0.4],
+    [795, 512, -0.4],
+  ].forEach(([lx, ly, rot]) => {
+    ctx.save();
+    ctx.translate(lx, ly);
+    ctx.rotate(rot);
+    ctx.fillStyle = 'rgba(72, 118, 82, 0.35)';
+    ctx.beginPath();
+    ctx.ellipse(0, 0, 26, 10, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+    ctx.restore();
+  });
 
   // Crimson ribbon bookmark
   ctx.fillStyle = '#be123c';
   ctx.beginPath();
-  ctx.moveTo(252, 0);
-  ctx.lineTo(260, 0);
-  ctx.lineTo(264, 384);
-  ctx.lineTo(256, 370);
-  ctx.lineTo(248, 384);
+  ctx.moveTo(504, 0);
+  ctx.lineTo(520, 0);
+  ctx.lineTo(526, 768);
+  ctx.lineTo(512, 738);
+  ctx.lineTo(498, 768);
   ctx.closePath();
   ctx.fill();
 
   const texture = new THREE.CanvasTexture(canvas);
   texture.colorSpace = THREE.SRGBColorSpace;
+  texture.anisotropy = 8;
   textureCache['journal_page'] = texture;
   return texture;
 }
@@ -896,4 +972,612 @@ export function getSunlitCobbleTexture(): THREE.CanvasTexture {
   textureCache['sunlit_cobble'] = texture;
   return texture;
 }
+
+/**
+ * 16. Fine Woven Japanese/East-Asian Tatami Mat Texture (Trà thất tâm tình)
+ */
+export function getTatamiMatTexture(): THREE.CanvasTexture {
+  if (textureCache['tatami_mat']) return textureCache['tatami_mat'];
+  const { canvas, ctx } = createOffscreen(1024, 1024);
+
+  ctx.fillStyle = '#9aa86e';
+  ctx.fillRect(0, 0, 1024, 1024);
+
+  const mats = [
+    { x: 0, y: 0, w: 512, h: 512, horiz: true },
+    { x: 512, y: 0, w: 512, h: 512, horiz: false },
+    { x: 0, y: 512, w: 512, h: 512, horiz: false },
+    { x: 512, y: 512, w: 512, h: 512, horiz: true },
+  ];
+
+  mats.forEach((m, idx) => {
+    ctx.fillStyle = idx % 2 === 0 ? '#a4b277' : '#96a56b';
+    ctx.fillRect(m.x + 18, m.y + 18, m.w - 36, m.h - 36);
+
+    // Fine crisp Igusa rush reed weave
+    ctx.strokeStyle = 'rgba(68, 78, 42, 0.24)';
+    ctx.lineWidth = 2;
+    if (m.horiz) {
+      for (let yy = m.y + 24; yy < m.y + m.h - 22; yy += 8) {
+        ctx.beginPath();
+        ctx.moveTo(m.x + 22, yy);
+        ctx.lineTo(m.x + m.w - 22, yy);
+        ctx.stroke();
+      }
+    } else {
+      for (let xx = m.x + 24; xx < m.x + m.w - 22; xx += 8) {
+        ctx.beginPath();
+        ctx.moveTo(xx, m.y + 22);
+        ctx.lineTo(xx, m.y + m.h - 22);
+        ctx.stroke();
+      }
+    }
+
+    // Dark brocade cloth border (Heri)
+    ctx.strokeStyle = '#2d3927';
+    ctx.lineWidth = 26;
+    ctx.strokeRect(m.x + 13, m.y + 13, m.w - 26, m.h - 26);
+
+    // Gold brocade diamond thread on border
+    ctx.strokeStyle = 'rgba(214, 178, 102, 0.42)';
+    ctx.lineWidth = 3;
+    ctx.strokeRect(m.x + 18, m.y + 18, m.w - 36, m.h - 36);
+  });
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  texture.wrapS = THREE.RepeatWrapping;
+  texture.wrapT = THREE.RepeatWrapping;
+  texture.anisotropy = 8;
+  textureCache['tatami_mat'] = texture;
+  return texture;
+}
+
+/**
+ * 17. Warm Travertine & Celadon Mosaic Stone Courtyard Texture (Đền Ước Nguyện / Phòng Mưa)
+ */
+export function getMosaicStoneTileTexture(): THREE.CanvasTexture {
+  if (textureCache['mosaic_stone']) return textureCache['mosaic_stone'];
+  const { canvas, ctx } = createOffscreen(1024, 1024);
+
+  ctx.fillStyle = '#33423f';
+  ctx.fillRect(0, 0, 1024, 1024);
+
+  const tiles = 8;
+  const size = 1024 / tiles;
+  const palette = ['#5a6f69', '#4f635e', '#657a73', '#495b57', '#566b64'];
+
+  for (let r = 0; r < tiles; r++) {
+    for (let c = 0; c < tiles; c++) {
+      const x = c * size;
+      const y = r * size;
+      ctx.fillStyle = palette[(r * 3 + c * 5) % palette.length];
+      ctx.beginPath();
+      ctx.roundRect(x + 5, y + 5, size - 10, size - 10, 10);
+      ctx.fill();
+
+      // Subtle mineral stone veins & bevels
+      ctx.fillStyle = 'rgba(235, 244, 238, 0.1)';
+      ctx.fillRect(x + 14, y + 14, size - 28, 6);
+      ctx.fillStyle = 'rgba(18, 28, 26, 0.24)';
+      ctx.fillRect(x + 14, y + size - 18, size - 28, 6);
+      ctx.strokeStyle = 'rgba(218, 234, 226, 0.08)';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(x + 18, y + size * 0.42);
+      ctx.quadraticCurveTo(x + size * 0.5, y + size * 0.54, x + size - 20, y + size * 0.36);
+      ctx.stroke();
+    }
+  }
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  texture.wrapS = THREE.RepeatWrapping;
+  texture.wrapT = THREE.RepeatWrapping;
+  texture.anisotropy = 8;
+  textureCache['mosaic_stone'] = texture;
+  return texture;
+}
+
+/**
+ * 18. Deep Obsidian & Warm Gold Inlay Pagoda Floor Texture (Phòng Tâm Linh)
+ */
+export function getPagodaTileTexture(): THREE.CanvasTexture {
+  if (textureCache['pagoda_tile']) return textureCache['pagoda_tile'];
+  const { canvas, ctx } = createOffscreen(1024, 1024);
+
+  ctx.fillStyle = '#171522';
+  ctx.fillRect(0, 0, 1024, 1024);
+
+  const step = 256;
+  for (let y = 0; y < 1024; y += step) {
+    for (let x = 0; x < 1024; x += step) {
+      ctx.fillStyle = ((x + y) / step) % 2 === 0 ? '#242033' : '#1e1b2b';
+      ctx.beginPath();
+      ctx.roundRect(x + 8, y + 8, step - 16, step - 16, 14);
+      ctx.fill();
+
+      // Celestial brass double inlay border
+      ctx.strokeStyle = 'rgba(218, 175, 86, 0.34)';
+      ctx.lineWidth = 3;
+      ctx.strokeRect(x + 22, y + 22, step - 44, step - 44);
+      ctx.strokeStyle = 'rgba(218, 175, 86, 0.16)';
+      ctx.lineWidth = 1.5;
+      ctx.strokeRect(x + 32, y + 32, step - 64, step - 64);
+    }
+  }
+
+  ctx.strokeStyle = 'rgba(229, 192, 108, 0.28)';
+  ctx.lineWidth = 5;
+  ctx.beginPath();
+  ctx.arc(512, 512, 350, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.arc(512, 512, 236, 0, Math.PI * 2);
+  ctx.stroke();
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  texture.wrapS = THREE.RepeatWrapping;
+  texture.wrapT = THREE.RepeatWrapping;
+  texture.anisotropy = 8;
+  textureCache['pagoda_tile'] = texture;
+  return texture;
+}
+
+export type PaintedVistaVariant =
+  | 'meadow'
+  | 'sakura'
+  | 'moon'
+  | 'rain_willow'
+  | 'starry_peaks'
+  | 'river_lanterns';
+
+/**
+ * 19. Rich Atmospheric Exterior Window Backdrop Painting (Displayed behind panoramic room glass)
+ */
+export function getPaintedVistaTexture(variant: PaintedVistaVariant): THREE.CanvasTexture {
+  const key = `vista_${variant}`;
+  if (textureCache[key]) return textureCache[key];
+
+  const { canvas, ctx } = createOffscreen(512, 320);
+
+  // Sky gradient per sanctuary biome
+  const skyGrad = ctx.createLinearGradient(0, 0, 0, 320);
+  if (variant === 'meadow') {
+    skyGrad.addColorStop(0, '#89c0d8');
+    skyGrad.addColorStop(0.55, '#fde6c4');
+    skyGrad.addColorStop(1, '#799c72');
+  } else if (variant === 'sakura') {
+    skyGrad.addColorStop(0, '#5a436e');
+    skyGrad.addColorStop(0.55, '#f29e8e');
+    skyGrad.addColorStop(1, '#4b3741');
+  } else if (variant === 'moon') {
+    skyGrad.addColorStop(0, '#10242c');
+    skyGrad.addColorStop(0.6, '#284b4d');
+    skyGrad.addColorStop(1, '#1c352a');
+  } else if (variant === 'rain_willow') {
+    skyGrad.addColorStop(0, '#2a414c');
+    skyGrad.addColorStop(0.58, '#5b7c87');
+    skyGrad.addColorStop(1, '#263d3c');
+  } else if (variant === 'starry_peaks') {
+    skyGrad.addColorStop(0, '#0f0e22');
+    skyGrad.addColorStop(0.6, '#2b244e');
+    skyGrad.addColorStop(1, '#1a152e');
+  } else {
+    skyGrad.addColorStop(0, '#132436');
+    skyGrad.addColorStop(0.55, '#2b4f64');
+    skyGrad.addColorStop(1, '#14303a');
+  }
+  ctx.fillStyle = skyGrad;
+  ctx.fillRect(0, 0, 512, 320);
+
+  // Sun, Full Moon, or Twinkling Stars
+  if (variant === 'meadow') {
+    const sun = ctx.createRadialGradient(350, 88, 6, 350, 88, 95);
+    sun.addColorStop(0, 'rgba(255, 252, 232, 0.98)');
+    sun.addColorStop(0.35, 'rgba(253, 224, 154, 0.52)');
+    sun.addColorStop(1, 'rgba(253, 224, 154, 0)');
+    ctx.fillStyle = sun;
+    ctx.fillRect(240, 0, 230, 200);
+  } else if (variant === 'moon' || variant === 'starry_peaks' || variant === 'river_lanterns') {
+    // Twinkling night sky stars
+    for (let i = 0; i < 65; i++) {
+      ctx.fillStyle = `rgba(255, 248, 225, ${0.35 + ((i * 19) % 60) / 100})`;
+      ctx.beginPath();
+      ctx.arc((i * 83) % 512, (i * 47) % 190, i % 5 === 0 ? 1.8 : 1.0, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    const mx = variant === 'moon' ? 256 : variant === 'starry_peaks' ? 375 : 155;
+    const my = variant === 'moon' ? 86 : 74;
+    const moonGlow = ctx.createRadialGradient(mx, my, 12, mx, my, 92);
+    moonGlow.addColorStop(0, 'rgba(255, 251, 235, 0.95)');
+    moonGlow.addColorStop(0.3, 'rgba(254, 243, 199, 0.45)');
+    moonGlow.addColorStop(1, 'rgba(254, 243, 199, 0)');
+    ctx.fillStyle = moonGlow;
+    ctx.beginPath();
+    ctx.arc(mx, my, 92, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#fffbeb';
+    ctx.beginPath();
+    ctx.arc(mx, my, 24, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // Layered distant karst mountain ridges
+  const drawRidge = (yBase: number, amp: number, freq: number, phase: number, col: string) => {
+    ctx.fillStyle = col;
+    ctx.beginPath();
+    ctx.moveTo(0, 320);
+    for (let x = 0; x <= 512; x += 8) {
+      const y =
+        yBase -
+        Math.abs(Math.sin(x * freq + phase)) * amp -
+        Math.sin(x * freq * 2.1 + phase * 1.4) * (amp * 0.3);
+      ctx.lineTo(x, y);
+    }
+    ctx.lineTo(512, 320);
+    ctx.closePath();
+    ctx.fill();
+  };
+
+  if (variant === 'meadow') {
+    drawRidge(210, 58, 0.014, 0.5, '#7e9f94');
+    drawRidge(238, 42, 0.018, 2.1, '#587d68');
+    drawRidge(268, 22, 0.022, 1.0, '#446a49');
+  } else if (variant === 'sakura') {
+    drawRidge(212, 54, 0.013, 1.1, '#6f556e');
+    drawRidge(242, 38, 0.019, 2.4, '#4c384b');
+    // Framing cherry blossom clusters
+    const blossoms = ['#fbcfe8', '#f9a8d4', '#f472b6', '#fce7f3'];
+    for (let i = 0; i < 42; i++) {
+      const bx = i < 21 ? (i * 11) % 190 : 340 + ((i * 13) % 175);
+      const by = 18 + ((i * 29) % 130);
+      ctx.fillStyle = blossoms[i % blossoms.length];
+      ctx.beginPath();
+      ctx.arc(bx, by, 7 + (i % 6), 0, Math.PI * 2);
+      ctx.fill();
+    }
+  } else if (variant === 'rain_willow') {
+    drawRidge(205, 52, 0.015, 0.9, '#39555f');
+    drawRidge(242, 32, 0.02, 2.7, '#274046');
+    // Soft mist band
+    const mist = ctx.createLinearGradient(0, 170, 0, 275);
+    mist.addColorStop(0, 'rgba(186, 230, 253, 0)');
+    mist.addColorStop(0.5, 'rgba(186, 230, 253, 0.24)');
+    mist.addColorStop(1, 'rgba(186, 230, 253, 0)');
+    ctx.fillStyle = mist;
+    ctx.fillRect(0, 170, 512, 105);
+  } else if (variant === 'starry_peaks') {
+    drawRidge(205, 72, 0.016, 0.4, '#241d42');
+    drawRidge(242, 46, 0.021, 1.9, '#191430');
+  } else if (variant === 'moon') {
+    drawRidge(214, 56, 0.014, 1.6, '#23423c');
+    drawRidge(250, 34, 0.02, 0.8, '#172e28');
+  } else {
+    drawRidge(212, 50, 0.014, 0.8, '#1e3e4d');
+    drawRidge(244, 30, 0.02, 2.2, '#132d38');
+    // Distant glowing lotus lanterns on river
+    for (let i = 0; i < 7; i++) {
+      const lx = 55 + i * 68;
+      const ly = 266 + (i % 3) * 12;
+      const g = ctx.createRadialGradient(lx, ly, 2, lx, ly, 22);
+      g.addColorStop(0, 'rgba(254, 243, 199, 0.95)');
+      g.addColorStop(0.4, 'rgba(245, 158, 11, 0.45)');
+      g.addColorStop(1, 'rgba(245, 158, 11, 0)');
+      ctx.fillStyle = g;
+      ctx.beginPath();
+      ctx.arc(lx, ly, 22, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+
+  // Soft foreground pine & tree silhouettes along bottom edge
+  ctx.fillStyle =
+    variant === 'meadow' ? '#2e4e35' : variant === 'sakura' ? '#362332' : '#101d1d';
+  for (let x = 0; x <= 512; x += 26) {
+    const h = 34 + ((x * 17) % 36);
+    ctx.beginPath();
+    ctx.moveTo(x - 16, 320);
+    ctx.lineTo(x, 320 - h);
+    ctx.lineTo(x + 16, 320);
+    ctx.closePath();
+    ctx.fill();
+  }
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  texture.anisotropy = 4;
+  textureCache[key] = texture;
+  return texture;
+}
+
+/**
+ * 20. Botanical Stained Glass Rose & Arch Window Texture
+ */
+export function getStainedGlassTexture(): THREE.CanvasTexture {
+  if (textureCache['stained_glass']) return textureCache['stained_glass'];
+  const { canvas, ctx } = createOffscreen(1024, 1024);
+
+  const bg = ctx.createRadialGradient(512, 512, 24, 512, 512, 512);
+  bg.addColorStop(0, '#fef3c7');
+  bg.addColorStop(0.35, '#a7f3d0');
+  bg.addColorStop(0.7, '#7dd3fc');
+  bg.addColorStop(1, '#315463');
+  ctx.fillStyle = bg;
+  ctx.fillRect(0, 0, 1024, 1024);
+
+  const petalCols = ['#fbbf24', '#f472b6', '#6ee7b7', '#38bdf8', '#fde68a', '#c084fc'];
+  for (let ring = 0; ring < 4; ring++) {
+    const count = 8 + ring * 4;
+    const rad = 110 + ring * 112;
+    for (let i = 0; i < count; i++) {
+      const a = (i / count) * Math.PI * 2;
+      ctx.save();
+      ctx.translate(512 + Math.cos(a) * rad, 512 + Math.sin(a) * rad);
+      ctx.rotate(a);
+      ctx.fillStyle = petalCols[(i + ring) % petalCols.length];
+      ctx.globalAlpha = 0.74;
+      ctx.beginPath();
+      ctx.ellipse(0, 0, 44 + ring * 6, 22 + ring * 3, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.globalAlpha = 1;
+      ctx.strokeStyle = '#1f2937';
+      ctx.lineWidth = 6;
+      ctx.stroke();
+      ctx.restore();
+    }
+  }
+
+  ctx.strokeStyle = '#1e2428';
+  ctx.lineWidth = 8;
+  [68, 178, 294, 412, 494].forEach((r) => {
+    ctx.beginPath();
+    ctx.arc(512, 512, r, 0, Math.PI * 2);
+    ctx.stroke();
+  });
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  texture.anisotropy = 8;
+  textureCache['stained_glass'] = texture;
+  return texture;
+}
+
+/**
+ * 21. Celestial Zodiac & Star-Chart Mandala Floor Inlay Texture (Phòng Tâm Linh)
+ */
+export function getZodiacMandalaTexture(): THREE.CanvasTexture {
+  if (textureCache['zodiac_mandala']) return textureCache['zodiac_mandala'];
+  const { canvas, ctx } = createOffscreen(1024, 1024);
+
+  const bg = ctx.createRadialGradient(512, 512, 20, 512, 512, 512);
+  bg.addColorStop(0, '#2c2448');
+  bg.addColorStop(0.55, '#1b1730');
+  bg.addColorStop(1, '#12101d');
+  ctx.fillStyle = bg;
+  ctx.fillRect(0, 0, 1024, 1024);
+
+  for (let i = 0; i < 200; i++) {
+    ctx.fillStyle = `rgba(253, 230, 138, ${0.22 + ((i * 17) % 50) / 100})`;
+    ctx.beginPath();
+    ctx.arc((i * 193) % 1024, (i * 107) % 1024, i % 4 === 0 ? 3.0 : 1.6, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // Crisp gilded brass concentric rings
+  ctx.strokeStyle = 'rgba(222, 180, 92, 0.78)';
+  [96, 192, 304, 412, 476].forEach((r, idx) => {
+    ctx.lineWidth = idx === 2 || idx === 4 ? 6 : 3.2;
+    ctx.beginPath();
+    ctx.arc(512, 512, r, 0, Math.PI * 2);
+    ctx.stroke();
+  });
+
+  // 12 radial zodiac sectors & degree ticks
+  ctx.strokeStyle = 'rgba(218, 175, 86, 0.48)';
+  ctx.lineWidth = 2.5;
+  for (let i = 0; i < 12; i++) {
+    const a = (i / 12) * Math.PI * 2;
+    ctx.beginPath();
+    ctx.moveTo(512 + Math.cos(a) * 96, 512 + Math.sin(a) * 96);
+    ctx.lineTo(512 + Math.cos(a) * 476, 512 + Math.sin(a) * 476);
+    ctx.stroke();
+
+    const rx = 512 + Math.cos(a + Math.PI / 12) * 444;
+    const ry = 512 + Math.sin(a + Math.PI / 12) * 444;
+    ctx.fillStyle = 'rgba(253, 224, 71, 0.72)';
+    ctx.beginPath();
+    ctx.arc(rx, ry, 8, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // Inscribed golden octagram
+  ctx.strokeStyle = 'rgba(229, 192, 108, 0.65)';
+  ctx.lineWidth = 4;
+  for (let sq = 0; sq < 2; sq++) {
+    ctx.save();
+    ctx.translate(512, 512);
+    ctx.rotate((sq * Math.PI) / 4);
+    ctx.strokeRect(-214, -214, 428, 428);
+    ctx.restore();
+  }
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  texture.anisotropy = 8;
+  textureCache['zodiac_mandala'] = texture;
+  return texture;
+}
+
+/**
+ * 22. Raked Zen Sand Ripples Texture (Phòng Mưa)
+ */
+export function getRakedZenSandTexture(): THREE.CanvasTexture {
+  if (textureCache['zen_sand']) return textureCache['zen_sand'];
+  const { canvas, ctx } = createOffscreen(1024, 1024);
+
+  ctx.fillStyle = '#ddd6c7';
+  ctx.fillRect(0, 0, 1024, 1024);
+
+  for (let i = 0; i < 5000; i++) {
+    ctx.fillStyle = i % 2 === 0 ? 'rgba(182, 173, 155, 0.35)' : 'rgba(247, 243, 234, 0.35)';
+    ctx.fillRect((i * 149) % 1024, (i * 277) % 1024, 3, 3);
+  }
+
+  for (let y = 20; y < 1024; y += 26) {
+    ctx.strokeStyle = 'rgba(130, 122, 106, 0.42)';
+    ctx.lineWidth = 4.5;
+    ctx.beginPath();
+    for (let x = 0; x <= 1024; x += 24) {
+      const yy = y + Math.sin(x * 0.015 + y * 0.01) * 5;
+      if (x === 0) ctx.moveTo(x, yy);
+      else ctx.lineTo(x, yy);
+    }
+    ctx.stroke();
+
+    ctx.strokeStyle = 'rgba(255, 252, 245, 0.48)';
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    for (let x = 0; x <= 1024; x += 24) {
+      const yy = y + 5 + Math.sin(x * 0.015 + y * 0.01) * 5;
+      if (x === 0) ctx.moveTo(x, yy);
+      else ctx.lineTo(x, yy);
+    }
+    ctx.stroke();
+  }
+
+  [88, 120, 152, 184].forEach((r) => {
+    ctx.strokeStyle = 'rgba(126, 118, 102, 0.48)';
+    ctx.lineWidth = 4.5;
+    ctx.beginPath();
+    ctx.arc(680, 380, r, 0, Math.PI * 2);
+    ctx.stroke();
+  });
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  texture.anisotropy = 8;
+  textureCache['zen_sand'] = texture;
+  return texture;
+}
+
+/**
+ * 23. Ink-Wash Botanical Calligraphy Scroll Texture (Trà Thất & Đền Ước Nguyện)
+ */
+export function getCalligraphyScrollTexture(): THREE.CanvasTexture {
+  if (textureCache['calligraphy_scroll']) return textureCache['calligraphy_scroll'];
+  const { canvas, ctx } = createOffscreen(512, 1024);
+
+  // Silk scroll border
+  ctx.fillStyle = '#c4a87e';
+  ctx.fillRect(0, 0, 512, 1024);
+
+  // Rice paper center
+  ctx.fillStyle = '#f6eedc';
+  ctx.fillRect(44, 84, 424, 856);
+
+  // Soft ink-wash distant mountain
+  ctx.fillStyle = 'rgba(72, 84, 78, 0.25)';
+  ctx.beginPath();
+  ctx.moveTo(44, 840);
+  ctx.quadraticCurveTo(180, 640, 310, 730);
+  ctx.quadraticCurveTo(410, 580, 468, 690);
+  ctx.lineTo(468, 940);
+  ctx.lineTo(44, 940);
+  ctx.closePath();
+  ctx.fill();
+
+  // Bamboo stalk & leaves in sumi-e ink
+  ctx.strokeStyle = '#2d3b32';
+  ctx.lineWidth = 9;
+  ctx.lineCap = 'round';
+  ctx.beginPath();
+  ctx.moveTo(356, 910);
+  ctx.quadraticCurveTo(330, 580, 376, 240);
+  ctx.stroke();
+
+  const leafPts = [
+    [340, 480, -0.8],
+    [328, 420, -0.5],
+    [356, 350, 0.7],
+    [368, 284, -0.6],
+  ];
+  leafPts.forEach(([lx, ly, ang]) => {
+    ctx.save();
+    ctx.translate(lx, ly);
+    ctx.rotate(ang);
+    ctx.fillStyle = '#28362e';
+    ctx.beginPath();
+    ctx.ellipse(0, 0, 46, 10, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  });
+
+  // Brush-stroke enso circle + vertical ink characters
+  ctx.strokeStyle = '#272320';
+  ctx.lineWidth = 14;
+  ctx.beginPath();
+  ctx.arc(176, 260, 68, 0.2, Math.PI * 1.88);
+  ctx.stroke();
+
+  ctx.fillStyle = '#2f2924';
+  for (let y = 390; y <= 630; y += 52) {
+    ctx.fillRect(144, y, 52 + ((y * 7) % 28), 8);
+    ctx.fillRect(164, y - 12, 8, 36);
+  }
+
+  // Crimson artist chop seal
+  ctx.fillStyle = '#b91c1c';
+  ctx.fillRect(148, 710, 44, 44);
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  texture.anisotropy = 8;
+  textureCache['calligraphy_scroll'] = texture;
+  return texture;
+}
+
+/**
+ * 24. Warm Rustic Hearth Brick Texture (Nhà Nhật Ký)
+ */
+export function getBrickFireplaceTexture(): THREE.CanvasTexture {
+  if (textureCache['brick_fireplace']) return textureCache['brick_fireplace'];
+  const { canvas, ctx } = createOffscreen(1024, 1024);
+
+  ctx.fillStyle = '#75685d';
+  ctx.fillRect(0, 0, 1024, 1024);
+
+  const brickColors = ['#7c3f2c', '#6e3626', '#8a4834', '#5c2d20', '#794131'];
+  const rows = 14;
+  const cols = 6;
+  const rh = 1024 / rows;
+  const cw = 1024 / cols;
+
+  for (let r = 0; r < rows; r++) {
+    const shift = r % 2 === 1 ? cw * 0.5 : 0;
+    for (let c = -1; c <= cols; c++) {
+      const bx = c * cw + shift;
+      const by = r * rh;
+      ctx.fillStyle = brickColors[(r * 5 + c * 3 + 50) % brickColors.length];
+      ctx.beginPath();
+      ctx.roundRect(bx + 5, by + 5, cw - 10, rh - 10, 6);
+      ctx.fill();
+
+      // Subtle brick top sheen & soot variation
+      ctx.fillStyle = 'rgba(255, 238, 220, 0.08)';
+      ctx.fillRect(bx + 10, by + 8, cw - 20, 5);
+    }
+  }
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  texture.wrapS = THREE.RepeatWrapping;
+  texture.wrapT = THREE.RepeatWrapping;
+  texture.anisotropy = 8;
+  textureCache['brick_fireplace'] = texture;
+  return texture;
+}
+
+
 

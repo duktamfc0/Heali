@@ -19,12 +19,14 @@ import {
 
 interface UnsentLettersViewProps {
   lowMotion?: boolean;
+  embeddedIn3DRoom?: boolean;
   prefillContent?: string | null;
   onClearPrefill?: () => void;
 }
 
 export const UnsentLettersView: React.FC<UnsentLettersViewProps> = ({
   lowMotion = false,
+  embeddedIn3DRoom = false,
   prefillContent,
   onClearPrefill,
 }) => {
@@ -261,40 +263,62 @@ export const UnsentLettersView: React.FC<UnsentLettersViewProps> = ({
       )}
 
       {/* 3D Interactive Candlelit Envelope & Burn Hearth Stage */}
-      <SanctuaryScene3D
-        variant="letters"
-        activeEffect={isBurning}
-        lowMotion={lowMotion}
-        allowPureViewToggle
-        className="min-h-[225px] sm:min-h-[255px]"
-      >
-        <div className="p-5 sm:p-8 flex flex-col justify-between min-h-[225px] sm:min-h-[255px] text-[#f4f4ed]">
-          <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-[#e8b48c]">
-            <Mail className="w-4 h-4" />
-            <span>Hòm thư bí mật · Hoá tro hoặc niêm phong</span>
+      {embeddedIn3DRoom ? (
+        <div className="flex flex-wrap items-center justify-between gap-3 p-4 rounded-2xl bg-[#f1efe5] dark:bg-[#222c24] border border-[#dcdad0] dark:border-[#324236]">
+          <div className="space-y-0.5">
+            <div className="text-xs font-semibold uppercase tracking-wider text-[#9c5a2c] dark:text-[#e8b48c] flex items-center gap-1.5">
+              <Mail className="w-3.5 h-3.5" />
+              <span>Hòm thư bí mật · Hoá tro hoặc niêm phong</span>
+            </div>
+            <p className="text-xs text-[#576c59] dark:text-[#b0c0b2]">
+              Viết để buông nhẹ lòng: hẹn ngày mở lại hoặc hoá tro xóa thật.
+            </p>
           </div>
-
-          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 pt-6">
-            <div className="space-y-1 max-w-xl">
-              <h1 className="text-2xl sm:text-3xl font-bold font-serif-healing text-white">
-                Lá thư chưa gửi
-              </h1>
-              <p className="text-xs sm:text-sm text-[#e7ddd5] font-serif-healing italic">
-                Viết để buông nhẹ lòng: niêm phong hẹn ngày mở lại, hoặc hoá tro xóa thật khỏi hệ thống.
-              </p>
+          <button
+            type="button"
+            onClick={() => setIsWritingLetter(true)}
+            className="min-h-[40px] flex items-center gap-1.5 rounded-xl bg-[#46613e] hover:bg-[#384f31] px-4 py-1.5 text-xs font-semibold text-white shadow-sm transition shrink-0"
+          >
+            <Plus className="w-3.5 h-3.5" />
+            <span>Viết thư mới</span>
+          </button>
+        </div>
+      ) : (
+        <SanctuaryScene3D
+          variant="letters"
+          activeEffect={isBurning}
+          lowMotion={lowMotion}
+          allowPureViewToggle
+          className="min-h-[225px] sm:min-h-[255px]"
+        >
+          <div className="p-5 sm:p-8 flex flex-col justify-between min-h-[225px] sm:min-h-[255px] text-[#f4f4ed]">
+            <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-[#e8b48c]">
+              <Mail className="w-4 h-4" />
+              <span>Hòm thư bí mật · Hoá tro hoặc niêm phong</span>
             </div>
 
-            <button
-              type="button"
-              onClick={() => setIsWritingLetter(true)}
-              className="min-h-[46px] flex items-center gap-1.5 rounded-2xl bg-[#537949] hover:bg-[#43653a] px-5 py-2.5 text-sm font-semibold text-white shadow-md transition shrink-0 self-start sm:self-auto whitespace-nowrap"
-            >
-              <Plus className="w-4 h-4" />
-              <span>Viết thư mới</span>
-            </button>
+            <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 pt-6">
+              <div className="space-y-1 max-w-xl">
+                <h1 className="text-2xl sm:text-3xl font-bold font-serif-healing text-white">
+                  Lá thư chưa gửi
+                </h1>
+                <p className="text-xs sm:text-sm text-[#e7ddd5] font-serif-healing italic">
+                  Viết để buông nhẹ lòng: niêm phong hẹn ngày mở lại, hoặc hoá tro xóa thật khỏi hệ thống.
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setIsWritingLetter(true)}
+                className="min-h-[46px] flex items-center gap-1.5 rounded-2xl bg-[#537949] hover:bg-[#43653a] px-5 py-2.5 text-sm font-semibold text-white shadow-md transition shrink-0 self-start sm:self-auto whitespace-nowrap"
+              >
+                <Plus className="w-4 h-4" />
+                <span>Viết thư mới</span>
+              </button>
+            </div>
           </div>
-        </div>
-      </SanctuaryScene3D>
+        </SanctuaryScene3D>
+      )}
 
       {/* Letters List / PIN Gate */}
       {isPinLocked ? (

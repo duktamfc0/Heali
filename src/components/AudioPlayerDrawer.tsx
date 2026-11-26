@@ -20,7 +20,20 @@ import {
 
 type BreathPhase = 'inhale' | 'hold' | 'exhale';
 
-export const AudioPlayerDrawer: React.FC = () => {
+export interface AudioPlayerDrawerProps {
+  isVisible?: boolean;
+  onDismiss?: () => void;
+  onRestore?: () => void;
+}
+
+export const AudioPlayerDrawer: React.FC<AudioPlayerDrawerProps> = ({
+  isVisible,
+  onDismiss,
+  onRestore,
+}) => {
+  const [internalVisible, setInternalVisible] = useState(true);
+  const barVisible = isVisible !== undefined ? isVisible : internalVisible;
+
   const [isPlaying, setIsPlaying] = useState(soundEngine.getIsPlaying());
   const [musicSnap, setMusicSnap] = useState<MusicPlayerSnapshot>(() => healingPlaylist.getSnapshot());
   const [isExpanded, setIsExpanded] = useState(false);
@@ -34,6 +47,17 @@ export const AudioPlayerDrawer: React.FC = () => {
   const [breathPhase, setBreathPhase] = useState<BreathPhase>('inhale');
   const [breathSecondsLeft, setBreathSecondsLeft] = useState(4);
   const [breathCycles, setBreathCycles] = useState(0);
+
+  const prevBarVisibleRef = React.useRef(barVisible);
+  useEffect(() => {
+    if (prevBarVisibleRef.current && !barVisible) {
+      soundEngine.stop();
+      setIsPlaying(false);
+      healingPlaylist.pause();
+      setIsExpanded(false);
+    }
+    prevBarVisibleRef.current = barVisible;
+  }, [barVisible]);
 
   useEffect(() => {
     setVolumes(soundEngine.getVolumes());
@@ -49,13 +73,23 @@ export const AudioPlayerDrawer: React.FC = () => {
       setBreathActive(true);
       setIsBreathingOpen(true);
     };
+    const onOpenAudio = (ev: Event) => {
+      const detail = (ev as CustomEvent<{ expand?: boolean }>).detail;
+      setInternalVisible(true);
+      onRestore?.();
+      if (detail?.expand) {
+        setIsExpanded(true);
+      }
+    };
     window.addEventListener('heali:open-breathing', onOpenBreathing);
+    window.addEventListener('heali:open-audio', onOpenAudio);
     return () => {
       unsub();
       unsubMusic();
       window.removeEventListener('heali:open-breathing', onOpenBreathing);
+      window.removeEventListener('heali:open-audio', onOpenAudio);
     };
-  }, []);
+  }, [onRestore]);
 
   useEffect(() => {
     if (!isBreathingOpen || !breathActive) return;
@@ -86,6 +120,15 @@ export const AudioPlayerDrawer: React.FC = () => {
   const handleTogglePlay = () => {
     const active = soundEngine.toggle();
     setIsPlaying(active);
+  };
+
+  const handleTurnOffAndHide = () => {
+    soundEngine.stop();
+    setIsPlaying(false);
+    healingPlaylist.pause();
+    setIsExpanded(false);
+    setInternalVisible(false);
+    onDismiss?.();
   };
 
   const handleVolumeChange = (channel: keyof typeof volumes, val: number) => {
@@ -169,92 +212,104 @@ export const AudioPlayerDrawer: React.FC = () => {
   return (
     <>
       {/* Clean Cream/Sage Bottom Audio & Breathing Bar */}
-      <div className="fixed bottom-[4.5rem] lg:bottom-3 inset-x-3 sm:inset-x-6 z-40 max-w-5xl mx-auto">
-        <div className="flex items-center justify-between gap-2.5 px-3.5 py-2 rounded-2xl bg-[#fafaf4]/96 dark:bg-[#1b241d]/96 border border-[#dfe3d6] dark:border-[#324236] shadow-lg text-[#273829] dark:text-[#edf2e8]">
-          <div className="flex items-center gap-2.5 min-w-0">
-            <button
-              type="button"
-              onClick={() => healingPlaylist.togglePlay()}
-              className={`w-10 h-10 rounded-full flex items-center justify-center transition shrink-0 ${
-                musicSnap.isPlaying
-                  ? 'bg-[#46613e] text-white shadow-sm'
-                  : 'bg-[#ebf0e5] dark:bg-[#243227] text-[#46613e] dark:text-[#98c18e] hover:bg-[#e1e8da] dark:hover:bg-[#2c3c2f]'
-              }`}
-              title={musicSnap.isPlaying ? 'Tạm dừng nhạc chữa lành' : 'Phát nhạc chữa lành'}
-              aria-label={musicSnap.isPlaying ? 'Tạm dừng nhạc chữa lành' : 'Phát nhạc chữa lành'}
-            >
-              {musicSnap.isPlaying ? (
-                <Pause className="w-4 h-4 fill-current" />
-              ) : (
-                <Play className="w-4 h-4 fill-current ml-0.5" />
-              )}
-            </button>
-
-            <button
-              type="button"
-              onClick={() => healingPlaylist.next()}
-              className="hidden sm:flex w-8 h-8 rounded-full items-center justify-center text-[#556b56] dark:text-[#b0c0b2] hover:bg-[#ebf0e5] dark:hover:bg-[#243227] hover:text-[#273829] dark:hover:text-[#edf2e8] transition shrink-0"
-              title="Chuyển bài tiếp theo"
-              aria-label="Chuyển bài tiếp theo"
-            >
-              <SkipForward className="w-3.5 h-3.5" />
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setIsExpanded(true)}
-              className="text-left min-w-0 group"
-            >
-              <div className="text-sm font-semibold text-[#273829] dark:text-[#edf2e8] truncate group-hover:text-[#46613e] dark:group-hover:text-[#98c18e] transition">
-                {musicSnap.isPlaying && currentTrack ? currentTrack.title : 'Nhạc chữa lành & Tiếng gió dịu'}
-              </div>
-              <div className="text-xs text-[#6d7c6d] dark:text-[#a6b7a8] truncate flex items-center gap-2">
-                <span>
-                  {musicSnap.isPlaying && currentTrack
-                    ? `${currentTrack.artist} · Chạm để chọn bài`
-                    : anyPlaying
-                    ? 'Đang phát thanh âm · Chạm để mở danh sách nhạc'
-                    : 'Chạm nút phát hoặc mở danh sách nhạc chữa lành'}
-                </span>
-                {remainingTimer > 0 && (
-                  <span className="font-mono text-[#46613e] dark:text-[#98c18e] font-medium tabular-nums">
-                    · {formatTimer(remainingTimer)}
-                  </span>
+      {barVisible && (
+        <div className="fixed bottom-[4.35rem] lg:bottom-3 inset-x-3 sm:inset-x-6 z-40 max-w-5xl mx-auto">
+          <div className="flex items-center justify-between gap-2 px-3 sm:px-3.5 py-2 rounded-2xl bg-[#fafaf4]/98 dark:bg-[#1b241d]/98 border border-[#dfe3d6] dark:border-[#324236] shadow-lg text-[#273829] dark:text-[#edf2e8]">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <button
+                type="button"
+                onClick={() => healingPlaylist.togglePlay()}
+                className={`w-10 h-10 rounded-full flex items-center justify-center transition shrink-0 ${
+                  musicSnap.isPlaying
+                    ? 'bg-[#46613e] text-white shadow-sm'
+                    : 'bg-[#ebf0e5] dark:bg-[#243227] text-[#46613e] dark:text-[#98c18e] hover:bg-[#e1e8da] dark:hover:bg-[#2c3c2f]'
+                }`}
+                title={musicSnap.isPlaying ? 'Tạm dừng nhạc chữa lành' : 'Phát nhạc chữa lành'}
+                aria-label={musicSnap.isPlaying ? 'Tạm dừng nhạc chữa lành' : 'Phát nhạc chữa lành'}
+              >
+                {musicSnap.isPlaying ? (
+                  <Pause className="w-4 h-4 fill-current" />
+                ) : (
+                  <Play className="w-4 h-4 fill-current ml-0.5" />
                 )}
-              </div>
-            </button>
-          </div>
+              </button>
 
-          <div className="flex items-center gap-1.5 shrink-0">
-            <button
-              type="button"
-              onClick={handleTogglePlay}
-              className={`min-w-[40px] min-h-[40px] flex items-center justify-center p-2 rounded-xl transition ${
-                isPlaying
-                  ? 'bg-[#e6efe2] dark:bg-[#263829] text-[#46613e] dark:text-[#98c18e]'
-                  : 'text-[#6c7d6d] dark:text-[#a6b7a8] hover:bg-[#eef2e8] dark:hover:bg-[#243227] hover:text-[#273829] dark:hover:text-[#edf2e8]'
-              }`}
-              title={isPlaying ? 'Tắt tiếng mưa & gió' : 'Bật tiếng mưa & gió'}
-              aria-label={isPlaying ? 'Tắt tiếng mưa & gió' : 'Bật tiếng mưa & gió'}
-            >
-              {isPlaying ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
-            </button>
+              <button
+                type="button"
+                onClick={() => healingPlaylist.next()}
+                className="hidden sm:flex w-8 h-8 rounded-full items-center justify-center text-[#556b56] dark:text-[#b0c0b2] hover:bg-[#ebf0e5] dark:hover:bg-[#243227] hover:text-[#273829] dark:hover:text-[#edf2e8] transition shrink-0"
+                title="Chuyển bài tiếp theo"
+                aria-label="Chuyển bài tiếp theo"
+              >
+                <SkipForward className="w-3.5 h-3.5" />
+              </button>
 
-            <button
-              type="button"
-              onClick={openBreathingModal}
-              className="min-h-[40px] shrink-0 flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-[#eef2e8] dark:hover:bg-[#243227] text-[#46613e] dark:text-[#98c18e] text-xs font-semibold transition whitespace-nowrap"
-            >
-              <Wind className="w-4 h-4" />
-              <span className="hidden sm:inline">Thở cùng Heali</span>
-            </button>
+              <button
+                type="button"
+                onClick={() => setIsExpanded(true)}
+                className="text-left min-w-0 group"
+              >
+                <div className="text-sm font-semibold text-[#273829] dark:text-[#edf2e8] truncate group-hover:text-[#46613e] dark:group-hover:text-[#98c18e] transition">
+                  {musicSnap.isPlaying && currentTrack ? currentTrack.title : 'Nhạc chữa lành & Tiếng gió dịu'}
+                </div>
+                <div className="text-xs text-[#6d7c6d] dark:text-[#a6b7a8] truncate flex items-center gap-2">
+                  <span>
+                    {musicSnap.isPlaying && currentTrack
+                      ? `${currentTrack.artist} · Chạm để chọn bài`
+                      : anyPlaying
+                      ? 'Đang phát thanh âm · Chạm để mở danh sách nhạc'
+                      : 'Chạm nút phát hoặc mở danh sách nhạc chữa lành'}
+                  </span>
+                  {remainingTimer > 0 && (
+                    <span className="font-mono text-[#46613e] dark:text-[#98c18e] font-medium tabular-nums">
+                      · {formatTimer(remainingTimer)}
+                    </span>
+                  )}
+                </div>
+              </button>
+            </div>
+
+            <div className="flex items-center gap-1 shrink-0">
+              <button
+                type="button"
+                onClick={handleTogglePlay}
+                className={`min-w-[38px] min-h-[38px] flex items-center justify-center p-2 rounded-xl transition ${
+                  isPlaying
+                    ? 'bg-[#e6efe2] dark:bg-[#263829] text-[#46613e] dark:text-[#98c18e]'
+                    : 'text-[#6c7d6d] dark:text-[#a6b7a8] hover:bg-[#eef2e8] dark:hover:bg-[#243227] hover:text-[#273829] dark:hover:text-[#edf2e8]'
+                }`}
+                title={isPlaying ? 'Tắt tiếng mưa & gió' : 'Bật tiếng mưa & gió'}
+                aria-label={isPlaying ? 'Tắt tiếng mưa & gió' : 'Bật tiếng mưa & gió'}
+              >
+                {isPlaying ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
+              </button>
+
+              <button
+                type="button"
+                onClick={openBreathingModal}
+                className="min-h-[38px] shrink-0 flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl hover:bg-[#eef2e8] dark:hover:bg-[#243227] text-[#46613e] dark:text-[#98c18e] text-xs font-semibold transition whitespace-nowrap"
+              >
+                <Wind className="w-4 h-4" />
+                <span className="hidden sm:inline">Thở cùng Heali</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={handleTurnOffAndHide}
+                className="min-w-[38px] min-h-[38px] flex items-center justify-center px-2 py-1.5 rounded-xl text-[#6c7d6d] dark:text-[#a6b7a8] hover:bg-[#f2e8e4] dark:hover:bg-[#352623] hover:text-[#9b3d2b] dark:hover:text-[#f2a697] transition"
+                title="Tắt và ẩn thanh nhạc chữa lành"
+                aria-label="Tắt thanh nhạc chữa lành"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
       {/* Guided 4-7-8 Breathing Modal ("Thở cùng Heali") */}
       {isBreathingOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#1c281e]/55 backdrop-blur-sm animate-fade-in">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#1c281e]/72 animate-fade-in">
           <div className="w-full max-w-md rounded-3xl bg-[#faf7ef] border border-[#dcdad0] p-6 shadow-2xl text-[#273829] space-y-5">
             <div className="flex items-center justify-between pb-3 border-b border-[#e6e4d8]">
               <div className="flex items-center gap-2.5">
@@ -317,7 +372,7 @@ export const AudioPlayerDrawer: React.FC = () => {
 
       {/* Expanded Sound Mixer Drawer */}
       {isExpanded && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-[#1c281e]/55 backdrop-blur-sm animate-fade-in">
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-[#1c281e]/72 animate-fade-in">
           <div className="w-full sm:max-w-lg max-h-[85vh] overflow-y-auto rounded-t-3xl sm:rounded-3xl bg-[#faf7ef] border border-[#dcdad0] p-6 shadow-2xl text-[#273829]">
             <div className="flex items-center justify-between pb-4 border-b border-[#e6e4d8]">
               <div className="flex items-center gap-2.5">

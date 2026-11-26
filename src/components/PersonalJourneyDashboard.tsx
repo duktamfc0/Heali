@@ -16,6 +16,7 @@ import { VI_COPY } from '../i18n/vi';
 
 interface PersonalJourneyDashboardProps {
   lowMotion?: boolean;
+  embeddedIn3DRoom?: boolean;
   onOpenJournal: () => void;
   onOpenWishes: () => void;
   onOpenCalm?: () => void;
@@ -27,6 +28,7 @@ interface PersonalJourneyDashboardProps {
 
 export const PersonalJourneyDashboard: React.FC<PersonalJourneyDashboardProps> = ({
   lowMotion = false,
+  embeddedIn3DRoom = false,
   onOpenJournal,
   onOpenWishes,
   onOpenCalm,
@@ -136,26 +138,28 @@ export const PersonalJourneyDashboard: React.FC<PersonalJourneyDashboardProps> =
   return (
     <section className="space-y-4 heali-stage-enter">
       {/* Interactive 3D Emotion Sanctuary Stage — Crystal reacts smoothly to selectedMood */}
-      <SanctuaryScene3D
-        variant="overview"
-        moodScore={selectedMood || 3}
-        lowMotion={lowMotion}
-        allowPureViewToggle
-        className="min-h-[210px] sm:min-h-[235px]"
-      >
-        <div className="p-5 sm:p-7 flex flex-col justify-end min-h-[210px] sm:min-h-[235px] text-[#f4f4ed] space-y-2">
-          <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-[#b6dbaf]">
-            <Heart className="w-3.5 h-3.5 text-[#f0a490]" />
-            <span>Góc riêng tư · Trạng thái: {activeMoodMeta.label}</span>
+      {!embeddedIn3DRoom && (
+        <SanctuaryScene3D
+          variant="overview"
+          moodScore={selectedMood || 3}
+          lowMotion={lowMotion}
+          allowPureViewToggle
+          className="min-h-[210px] sm:min-h-[235px]"
+        >
+          <div className="p-5 sm:p-7 flex flex-col justify-end min-h-[210px] sm:min-h-[235px] text-[#f4f4ed] space-y-2">
+            <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-[#b6dbaf]">
+              <Heart className="w-3.5 h-3.5 text-[#f0a490]" />
+              <span>Góc riêng tư · Trạng thái: {activeMoodMeta.label}</span>
+            </div>
+            <h2 className="text-2xl sm:text-3xl font-bold font-serif-healing text-white [text-wrap:balance]">
+              Gọi tên điều bạn đang mang lúc này
+            </h2>
+            <p className="text-xs sm:text-sm text-[#d4e0d3] max-w-xl">
+              Chạm chọn cảm giác bên dưới — viên tinh thể nội tâm sẽ đổi sắc dịu theo nhịp lòng của bạn.
+            </p>
           </div>
-          <h2 className="text-2xl sm:text-3xl font-bold font-serif-healing text-white [text-wrap:balance]">
-            Gọi tên điều bạn đang mang lúc này
-          </h2>
-          <p className="text-xs sm:text-sm text-[#d4e0d3] max-w-xl">
-            Chạm chọn cảm giác bên dưới — viên tinh thể nội tâm sẽ đổi sắc dịu theo nhịp lòng của bạn.
-          </p>
-        </div>
-      </SanctuaryScene3D>
+        </SanctuaryScene3D>
+      )}
 
       {/* 3-Panel Honest Dashboard (visual-first, compact copy) */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">

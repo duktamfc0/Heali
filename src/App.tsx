@@ -28,7 +28,9 @@ import { SharedLanternGiftView } from './components/SharedLanternGiftView';
 import { LanternNightView } from './components/LanternNightView';
 import { AiCompanionCard } from './components/AiCompanionCard';
 import { QuarterlyReportModal } from './components/QuarterlyReportModal';
+import { AllFeaturesHubModal } from './components/AllFeaturesHubModal';
 import { DynamicWeatherOverlay, type WeatherMode } from './components/world/DynamicWeatherOverlay';
+import type { RoomActionId, RoomLocationId, VietnameseRegionId } from './components/world/r3f/roomTypes';
 import { getCopy, UI_CHROME } from './i18n';
 import {
   Leaf,
@@ -48,6 +50,10 @@ import {
   ArrowLeft,
   Info,
   CalendarHeart,
+  X,
+  List,
+  Gamepad2,
+  LayoutGrid,
 } from 'lucide-react';
 
 // Lazy-load heavy Three.js / R3F 3D Sanctuary so first load stays fast and light
@@ -94,7 +100,15 @@ export default function App() {
   const copy = getCopy(prefs.language);
   const chrome = UI_CHROME[prefs.language];
 
-  // 4-group Navigation Architecture
+  // Game-First 3D Rooms Mode (default) vs Classic Reading Mode
+  const [appViewMode, setAppViewMode] = useState<'3d_game' | 'classic'>('3d_game');
+  const [current3DRoom, setCurrent3DRoom] = useState<RoomLocationId>('outdoor');
+  const [requestedRoom, setRequestedRoom] = useState<{ room: RoomLocationId; seq: number } | null>(null);
+  const [requestedRegion, setRequestedRegion] = useState<{ region: VietnameseRegionId; seq: number } | null>(null);
+  const [activeRoomDrawer, setActiveRoomDrawer] = useState<RoomActionId | null>(null);
+  const [isAllFeaturesOpen, setIsAllFeaturesOpen] = useState(false);
+
+  // 4-group Navigation Architecture (Classic Mode)
   const [activeGroup, setActiveGroup] = useState<NavGroup>('self');
   const [selfSub, setSelfSub] = useState<SelfSubTab>('overview');
   const [calmTool, setCalmTool] = useState<CalmSubTool>('breathe');
@@ -140,6 +154,22 @@ export default function App() {
     return 'petals';
   });
   const [isInsideCottage, setIsInsideCottage] = useState(false);
+  const [isAudioBarVisible, setIsAudioBarVisible] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem('heali_audio_bar_visible') !== 'false';
+    } catch {
+      return true;
+    }
+  });
+
+  const updateAudioBarVisible = React.useCallback((next: boolean) => {
+    setIsAudioBarVisible(next);
+    try {
+      localStorage.setItem('heali_audio_bar_visible', next ? 'true' : 'false');
+    } catch {
+      // Ignore storage write errors
+    }
+  }, []);
 
   useEffect(() => {
     try {
@@ -177,9 +207,14 @@ export default function App() {
     const openHelpline = () => setIsHelplineOpen(true);
     const openExUrge = () => setIsExUrgeOpen(true);
     const openBreathing = () => {
-      setActiveGroup('calm');
-      setCalmTool('breathe');
       markFirstUsefulAction();
+      if (appViewMode === '3d_game') {
+        setRequestedRoom((prev) => ({ room: 'calm', seq: (prev?.seq ?? 0) + 1 }));
+        setActiveRoomDrawer('open_calm_breathe');
+      } else {
+        setActiveGroup('calm');
+        setCalmTool('breathe');
+      }
     };
     window.addEventListener('heali:open-helpline', openHelpline);
     window.addEventListener('heali:open-ex-urge', openExUrge);
@@ -189,7 +224,19 @@ export default function App() {
       window.removeEventListener('heali:open-ex-urge', openExUrge);
       window.removeEventListener('heali:open-breathing', openBreathing);
     };
-  }, [markFirstUsefulAction]);
+  }, [markFirstUsefulAction, appViewMode]);
+
+  useEffect(() => {
+    if (!activeRoomDrawer) return;
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        setActiveRoomDrawer(null);
+      }
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [activeRoomDrawer]);
 
   const isAdminRoute = pathname.startsWith('/admin');
   const isLandingRoute = pathname.startsWith('/gioi-thieu');
@@ -311,27 +358,71 @@ export default function App() {
     });
   }, [prefs.difficultDates, dismissedDateNoticeIds]);
 
+  const enter3DRoom = React.useCallback((room: RoomLocationId) => {
+    setAppViewMode('3d_game');
+    setActiveRoomDrawer(null);
+    setCurrent3DRoom(room);
+    setRequestedRoom((prev) => ({ room, seq: (prev?.seq ?? 0) + 1 }));
+  }, []);
+
+  const teleport3DRegion = React.useCallback((region: VietnameseRegionId) => {
+    setAppViewMode('3d_game');
+    setActiveRoomDrawer(null);
+    setCurrent3DRoom('outdoor');
+    setRequestedRegion((prev) => ({ region, seq: (prev?.seq ?? 0) + 1 }));
+  }, []);
+
+  const handleTriggerRoomAction = React.useCallback(
+    (action: RoomActionId) => {
+      markFirstUsefulAction();
+      if (action === 'open_float_lantern') {
+        setIsFloatModalOpen(true);
+        return;
+      }
+      if (action === 'open_send_gift') {
+        setIsSendGiftModalOpen(true);
+        return;
+      }
+      if (action === 'open_daily_card') {
+        setIsDailyCardModalOpen(true);
+        return;
+      }
+      if (action === 'open_ex_urge') {
+        setIsExUrgeOpen(true);
+        return;
+      }
+      if (action === 'open_quarterly_report') {
+        setQuarterlyModalTab('report');
+        setIsQuarterlyModalOpen(true);
+        return;
+      }
+      setActiveRoomDrawer(action);
+    },
+    [markFirstUsefulAction]
+  );
+
   const handleOnboardingFinish = (need: OnboardingNeed | null) => {
     completeOnboarding(need);
     if (need === 'release') {
-      setActiveGroup('self');
-      setSelfSub('overview');
+      enter3DRoom('journal');
     } else if (need === 'calm') {
-      setActiveGroup('calm');
-      setCalmTool('breathe');
+      enter3DRoom('calm');
     } else if (need === 'together') {
-      setActiveGroup('community');
-      setCommunitySub('confessions');
+      enter3DRoom('community');
     } else if (need === 'quiet') {
-      setActiveGroup('explore');
-      setExploreSub('lake_2d');
+      enter3DRoom('lake');
     }
   };
 
   const handleMoveExUrgeToLetter = (draftText: string) => {
     setLetterPrefill(draftText);
-    setActiveGroup('self');
-    setSelfSub('letters');
+    if (appViewMode === '3d_game') {
+      enter3DRoom('letters');
+      setActiveRoomDrawer('open_letters');
+    } else {
+      setActiveGroup('self');
+      setSelfSub('letters');
+    }
   };
 
   const handle3DZoneSelect = (
@@ -370,6 +461,17 @@ export default function App() {
       setExploreSub('spiritual_room');
     }
   };
+
+  const gameRoomNavItems: Array<{ id: RoomLocationId; label: string; icon: React.ComponentType<{ className?: string }> }> = [
+    { id: 'outdoor', label: 'Thung lũng', icon: Compass },
+    { id: 'journal', label: 'Nhật ký', icon: BookOpen },
+    { id: 'letters', label: 'Thư chưa gửi', icon: Mail },
+    { id: 'wishes', label: 'Ước nguyện', icon: TreeDeciduous },
+    { id: 'calm', label: 'Phòng mưa', icon: Wind },
+    { id: 'community', label: 'Trà thất', icon: Users },
+    { id: 'spiritual_room', label: 'Tâm linh', icon: Sparkles },
+    { id: 'lake', label: 'Hồ hoa đăng', icon: Waves },
+  ];
 
   const primaryGroups = [
     { id: 'self' as const, label: copy.navGroups.self, icon: Heart },
@@ -444,26 +546,32 @@ export default function App() {
     <div className="min-h-screen bg-[#f4f4ed] dark:bg-[#141a15] text-[#273829] dark:text-[#edf2e8] flex flex-col selection:bg-[#d8e5d3] selection:text-[#273829]">
       <OfflineIndicator />
 
-      {activeGroup === 'explore' &&
-        (exploreSub === 'lake_2d' || exploreSub === '3d_world') && (
-          <DynamicWeatherOverlay
-            mode={weatherMode}
-            dimmed={isInsideCottage}
-            lowMotion={prefs.lowMotion}
-          />
-        )}
+      {((appViewMode === '3d_game' && current3DRoom === 'outdoor') ||
+        (appViewMode === 'classic' &&
+          activeGroup === 'explore' &&
+          (exploreSub === 'lake_2d' || exploreSub === '3d_world'))) && (
+        <DynamicWeatherOverlay
+          mode={weatherMode}
+          dimmed={isInsideCottage}
+          lowMotion={prefs.lowMotion}
+        />
+      )}
 
-      {/* Clean 3-Zone Top Header */}
-      <header className="sticky top-0 z-40 bg-[#fafaf4]/96 dark:bg-[#182019]/96 backdrop-blur-sm border-b border-[#e2e6da] dark:border-[#2c3a2e] px-3 sm:px-6 py-2.5 transition-colors">
-        <div className="max-w-5xl mx-auto flex items-center justify-between gap-3">
+      {/* Clean Top Header */}
+      <header className="sticky top-0 z-40 bg-[#fafaf4]/96 dark:bg-[#182019]/96 border-b border-[#e2e6da] dark:border-[#2c3a2e] px-3 sm:px-5 py-2 transition-colors">
+        <div className="max-w-7xl mx-auto flex items-center justify-between gap-2.5">
           {/* Left: Brand */}
           <button
             type="button"
             onClick={() => {
-              setActiveGroup('self');
-              setSelfSub('overview');
+              if (appViewMode === '3d_game') {
+                enter3DRoom('outdoor');
+              } else {
+                setActiveGroup('self');
+                setSelfSub('overview');
+              }
             }}
-            className="flex items-center gap-2 cursor-pointer group whitespace-nowrap shrink-0 min-h-[44px]"
+            className="flex items-center gap-2 cursor-pointer group whitespace-nowrap shrink-0 min-h-[42px]"
           >
             <Leaf className="w-5 h-5 text-[#496946] dark:text-[#8eb984]" strokeWidth={1.9} />
             <span className="text-2xl font-bold tracking-tight text-[#273829] dark:text-[#edf2e8] font-serif-healing leading-none">
@@ -471,33 +579,91 @@ export default function App() {
             </span>
           </button>
 
-          {/* Center: 4 Clean Navigation Groups (Desktop) */}
-          <nav className="hidden lg:flex items-center gap-6" aria-label="Điều hướng chính">
-            {primaryGroups.map((group) => {
-              const isCurrent = activeGroup === group.id;
-              return (
-                <button
-                  key={group.id}
-                  type="button"
-                  onClick={() => setActiveGroup(group.id)}
-                  className={`min-h-[44px] py-2 text-sm whitespace-nowrap shrink-0 transition border-b-2 ${
-                    isCurrent
-                      ? 'border-[#46613e] dark:border-[#8eb984] text-[#273829] dark:text-[#edf2e8] font-semibold'
-                      : 'border-transparent text-[#576c59] dark:text-[#a6b7a8] hover:text-[#273829] dark:hover:text-[#edf2e8] font-medium'
-                  }`}
-                >
-                  {group.label}
-                </button>
-              );
-            })}
-          </nav>
+          {/* Center: 3D Game Rooms Switcher OR Classic 4-Group Navigation */}
+          {appViewMode === '3d_game' ? (
+            <nav
+              className="hidden lg:flex items-center gap-1 overflow-x-auto scrollbar-none py-0.5"
+              aria-label="Không gian phòng 3D"
+            >
+              {gameRoomNavItems.map((room) => {
+                const Icon = room.icon;
+                const isCurrent = current3DRoom === room.id;
+                return (
+                  <button
+                    key={room.id}
+                    type="button"
+                    onClick={() => enter3DRoom(room.id)}
+                    className={`min-h-[38px] px-2.5 py-1.5 rounded-xl text-xs whitespace-nowrap shrink-0 inline-flex items-center gap-1.5 transition ${
+                      isCurrent
+                        ? 'bg-[#46613e] text-white font-semibold shadow-sm'
+                        : 'text-[#526754] dark:text-[#a6b7a8] hover:bg-[#ecebe0] dark:hover:bg-[#233025] hover:text-[#273829] dark:hover:text-[#edf2e8] font-medium'
+                    }`}
+                  >
+                    <Icon className="w-3.5 h-3.5" />
+                    <span>{room.label}</span>
+                  </button>
+                );
+              })}
+            </nav>
+          ) : (
+            <nav className="hidden lg:flex items-center gap-6" aria-label="Điều hướng chính">
+              {primaryGroups.map((group) => {
+                const isCurrent = activeGroup === group.id;
+                return (
+                  <button
+                    key={group.id}
+                    type="button"
+                    onClick={() => setActiveGroup(group.id)}
+                    className={`min-h-[42px] py-2 text-sm whitespace-nowrap shrink-0 transition border-b-2 ${
+                      isCurrent
+                        ? 'border-[#46613e] dark:border-[#8eb984] text-[#273829] dark:text-[#edf2e8] font-semibold'
+                        : 'border-transparent text-[#576c59] dark:text-[#a6b7a8] hover:text-[#273829] dark:hover:text-[#edf2e8] font-medium'
+                    }`}
+                  >
+                    {group.label}
+                  </button>
+                );
+              })}
+            </nav>
+          )}
 
-          {/* Right: Language VI/EN + 1-tap Crisis Button + Settings */}
-          <div className="flex items-center gap-2 shrink-0">
+          {/* Right: All Features Hub + 3D/Reading Switch + Language VI/EN + 1-tap Crisis Button + Settings */}
+          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+            <button
+              type="button"
+              onClick={() => setIsAllFeaturesOpen(true)}
+              className="inline-flex min-h-[40px] px-2.5 items-center justify-center gap-1.5 rounded-xl bg-[#e7eee2] dark:bg-[#233226] border border-[#b8c8b2] dark:border-[#3c5441] text-xs font-semibold text-[#273829] dark:text-[#edf2e8] hover:border-[#46613e] transition whitespace-nowrap"
+              title="Mở toàn bộ 24 chức năng & 4 vùng miền 3D Việt Nam"
+            >
+              <LayoutGrid className="w-3.5 h-3.5 text-[#46613e] dark:text-[#8eb984]" />
+              <span className="hidden md:inline">Tất cả chức năng</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() =>
+                setAppViewMode((prev) => (prev === '3d_game' ? 'classic' : '3d_game'))
+              }
+              className="inline-flex min-h-[40px] px-2.5 items-center justify-center gap-1.5 rounded-xl bg-[#f1efe5] dark:bg-[#222d25] border border-[#dcdad0] dark:border-[#324236] text-xs font-semibold text-[#273829] dark:text-[#edf2e8] hover:border-[#46613e] transition whitespace-nowrap"
+              title={appViewMode === '3d_game' ? 'Chuyển sang dạng thẻ đọc gọn' : 'Quay lại không gian game 3D'}
+            >
+              {appViewMode === '3d_game' ? (
+                <>
+                  <List className="w-3.5 h-3.5 text-[#46613e] dark:text-[#8eb984]" />
+                  <span className="hidden xl:inline">Đọc gọn</span>
+                </>
+              ) : (
+                <>
+                  <Gamepad2 className="w-3.5 h-3.5 text-[#46613e] dark:text-[#8eb984]" />
+                  <span className="hidden sm:inline">Vào 3D</span>
+                </>
+              )}
+            </button>
+
             <button
               type="button"
               onClick={() => setLanguage(prefs.language === 'vi' ? 'en' : 'vi')}
-              className="hidden sm:inline-flex min-h-[44px] px-2.5 items-center justify-center rounded-xl bg-[#f1efe5] dark:bg-[#222d25] border border-[#dcdad0] dark:border-[#324236] text-xs font-bold text-[#273829] dark:text-[#edf2e8] hover:border-[#46613e] transition"
+              className="hidden sm:inline-flex min-h-[40px] px-2.5 items-center justify-center rounded-xl bg-[#f1efe5] dark:bg-[#222d25] border border-[#dcdad0] dark:border-[#324236] text-xs font-bold text-[#273829] dark:text-[#edf2e8] hover:border-[#46613e] transition"
               title="Chuyển ngôn ngữ Tiếng Việt / English"
               aria-label="Switch language VI / EN"
             >
@@ -507,17 +673,17 @@ export default function App() {
             <button
               type="button"
               onClick={() => setIsHelplineOpen(true)}
-              className="min-h-[48px] px-3.5 sm:px-4 rounded-2xl bg-[#9b3d2b] hover:bg-[#823020] text-white text-sm sm:text-base font-semibold flex items-center gap-2 shadow-sm transition whitespace-nowrap"
+              className="min-h-[44px] px-3 sm:px-3.5 rounded-2xl bg-[#9b3d2b] hover:bg-[#823020] text-white text-xs sm:text-sm font-semibold flex items-center gap-1.5 shadow-sm transition whitespace-nowrap"
               aria-label="Cần giúp ngay — Mở số điện thoại hỗ trợ và gửi tin cho người thân"
             >
-              <ShieldCheck className="w-5 h-5 shrink-0" strokeWidth={2} />
+              <ShieldCheck className="w-4 h-4 shrink-0" strokeWidth={2} />
               <span>{copy.crisisButtonLabel}</span>
             </button>
 
             <button
               type="button"
               onClick={() => setIsProfileOpen(true)}
-              className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl text-[#4c5e4e] dark:text-[#b0c0b2] hover:text-[#273829] dark:hover:text-[#edf2e8] hover:bg-[#eef2e8] dark:hover:bg-[#243227] transition"
+              className="min-w-[40px] min-h-[40px] flex items-center justify-center rounded-xl text-[#4c5e4e] dark:text-[#b0c0b2] hover:text-[#273829] dark:hover:text-[#edf2e8] hover:bg-[#eef2e8] dark:hover:bg-[#243227] transition"
               title={`Hồ sơ & Cài đặt (${currentUser?.nickname || 'Bạn Lữ Hành'})`}
               aria-label="Mở hồ sơ, giao diện tối, mã PIN và quyền riêng tư"
             >
@@ -527,10 +693,63 @@ export default function App() {
         </div>
       </header>
 
-      {/* Main Content Area */}
-      <main className="flex-1 max-w-5xl w-full mx-auto p-3 sm:p-6 pb-36 lg:pb-28 space-y-6">
-        {/* ================= GROUP 1: CHO RIÊNG MÌNH ================= */}
-        {activeGroup === 'self' && (
+      {/* ==================== GAME-FIRST FULL-VIEWPORT 3D SANCTUARY ==================== */}
+      {appViewMode === '3d_game' ? (
+        <main
+          className={`flex-1 w-full max-w-7xl mx-auto p-2 sm:p-3 ${
+            isAudioBarVisible ? 'pb-[136px] lg:pb-[74px]' : 'pb-[68px] lg:pb-3'
+          }`}
+        >
+          <Suspense
+            fallback={
+              <div
+                className={`${
+                  isAudioBarVisible
+                    ? 'h-[calc(100vh-204px)] lg:h-[calc(100vh-148px)] min-h-[410px]'
+                    : 'h-[calc(100vh-138px)] lg:h-[calc(100vh-84px)] min-h-[480px]'
+                } rounded-3xl bg-[#e9eee5] dark:bg-[#1b241d] border border-[#dedcd0] dark:border-[#324236] flex flex-col items-center justify-center p-10 text-center space-y-2`}
+              >
+                <p className="text-base font-semibold font-serif-healing">
+                  Đang mở không gian 3D Heali...
+                </p>
+                <p className="text-sm text-[#576c59] dark:text-[#b0c0b2]">
+                  Thung lũng và các phòng bình yên đang sẵn sàng đón bạn.
+                </p>
+              </div>
+            }
+          >
+            <Sanctuary3DWorld
+              weatherMode={weatherMode}
+              onChangeWeatherMode={setWeatherMode}
+              requestedRoom={requestedRoom}
+              requestedRegion={requestedRegion}
+              fullViewport
+              isAudioBarVisible={isAudioBarVisible}
+              isDrawerOpen={
+                Boolean(activeRoomDrawer) ||
+                isAllFeaturesOpen ||
+                isFloatModalOpen ||
+                isSendGiftModalOpen ||
+                isDailyCardModalOpen ||
+                isQuarterlyModalOpen ||
+                isHelplineOpen ||
+                isProfileOpen ||
+                isExUrgeOpen
+              }
+              onLocationChange={setCurrent3DRoom}
+              onInteriorChange={setIsInsideCottage}
+              onOpenFloatModal={() => setIsFloatModalOpen(true)}
+              onOpenAllFeatures={() => setIsAllFeaturesOpen(true)}
+              onTriggerRoomAction={handleTriggerRoomAction}
+              onSelectZone={handle3DZoneSelect}
+            />
+          </Suspense>
+        </main>
+      ) : (
+        /* ==================== CLASSIC ACCESSIBLE CARD VIEW ==================== */
+        <main className="flex-1 max-w-5xl w-full mx-auto p-3 sm:p-6 pb-36 lg:pb-28 space-y-6">
+          {/* ================= GROUP 1: CHO RIÊNG MÌNH ================= */}
+          {activeGroup === 'self' && (
           <div className="space-y-6 animate-fade-in">
             {/* Segmented Sub-nav inside "Cho riêng mình" */}
             <div className="flex flex-wrap items-center justify-between gap-3">
@@ -975,12 +1194,13 @@ export default function App() {
                 <Sanctuary3DWorld
                   weatherMode={weatherMode}
                   onChangeWeatherMode={setWeatherMode}
+                  requestedRoom={requestedRoom}
+                  requestedRegion={requestedRegion}
+                  isAudioBarVisible={isAudioBarVisible}
                   onInteriorChange={setIsInsideCottage}
                   onOpenFloatModal={() => setIsFloatModalOpen(true)}
-                  onOpenWriteLetter={() => {
-                    setActiveGroup('self');
-                    setSelfSub('letters');
-                  }}
+                  onOpenAllFeatures={() => setIsAllFeaturesOpen(true)}
+                  onTriggerRoomAction={handleTriggerRoomAction}
                   onSelectZone={handle3DZoneSelect}
                 />
               </Suspense>
@@ -1016,7 +1236,7 @@ export default function App() {
           </div>
         )}
 
-        {/* Quiet Public Info Footer inside App */}
+        {/* Quiet Public Info Footer inside Classic View */}
         <footer className="pt-4 border-t border-[#e2e5d9] dark:border-[#2a382c] flex flex-wrap items-center justify-between gap-3 text-xs text-[#5e7260] dark:text-[#a6b7a8]">
           <span>{copy.realWorldBridge.disclaimer}</span>
           <div className="flex flex-wrap items-center gap-4 font-medium">
@@ -1049,39 +1269,414 @@ export default function App() {
           </div>
         </footer>
       </main>
+      )}
 
-      {/* Mobile / Tablet 4-Group Bottom Navigation */}
+      {/* Interactive 3D Room Prop Feature Drawer Overlay */}
+      {activeRoomDrawer && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-5 bg-[#121c14]/65"
+          onClick={() => setActiveRoomDrawer(null)}
+        >
+          <div
+            className="relative w-full max-w-4xl max-h-[88vh] flex flex-col rounded-3xl bg-[#faf7ef] dark:bg-[#19211b] border border-[#dcdad0] dark:border-[#324236] shadow-2xl overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex flex-wrap items-center justify-between gap-2 px-4 sm:px-6 py-3.5 border-b border-[#e4e2d6] dark:border-[#2c3a2f] bg-[#f4f2ea] dark:bg-[#1f2921]">
+              <div className="flex flex-wrap items-center gap-2">
+                {activeRoomDrawer === 'open_journal' || activeRoomDrawer === 'open_mood_checkin' ? (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => setActiveRoomDrawer('open_journal')}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition ${
+                        activeRoomDrawer === 'open_journal'
+                          ? 'bg-[#46613e] text-white'
+                          : 'bg-white/80 dark:bg-[#2a382d] text-[#3d5240] dark:text-[#c7d7c9]'
+                      }`}
+                    >
+                      Sổ Nhật Ký
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setActiveRoomDrawer('open_mood_checkin')}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition ${
+                        activeRoomDrawer === 'open_mood_checkin'
+                          ? 'bg-[#46613e] text-white'
+                          : 'bg-white/80 dark:bg-[#2a382d] text-[#3d5240] dark:text-[#c7d7c9]'
+                      }`}
+                    >
+                      Tinh Thể Tâm Trạng
+                    </button>
+                  </>
+                ) : activeRoomDrawer === 'open_confessions' || activeRoomDrawer === 'open_stranger_chat' ? (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => setActiveRoomDrawer('open_confessions')}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition ${
+                        activeRoomDrawer === 'open_confessions'
+                          ? 'bg-[#46613e] text-white'
+                          : 'bg-white/80 dark:bg-[#2a382d] text-[#3d5240] dark:text-[#c7d7c9]'
+                      }`}
+                    >
+                      Tâm Tình Ẩn Danh
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setActiveRoomDrawer('open_stranger_chat')}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition ${
+                        activeRoomDrawer === 'open_stranger_chat'
+                          ? 'bg-[#46613e] text-white'
+                          : 'bg-white/80 dark:bg-[#2a382d] text-[#3d5240] dark:text-[#c7d7c9]'
+                      }`}
+                    >
+                      Bàn Trà Gặp Gỡ 1:1
+                    </button>
+                  </>
+                ) : activeRoomDrawer.startsWith('open_calm_') ? (
+                  <>
+                    {[
+                      { id: 'open_calm_breathe' as const, label: 'Thở 4-7-8' },
+                      { id: 'open_calm_grounding' as const, label: 'Neo 5-4-3-2-1' },
+                      { id: 'open_calm_audio' as const, label: 'Âm thanh' },
+                      { id: 'open_calm_compassion' as const, label: 'Tự thương' },
+                      { id: 'open_calm_reframe' as const, label: 'Góc nhìn mới' },
+                    ].map((tab) => (
+                      <button
+                        key={tab.id}
+                        type="button"
+                        onClick={() => setActiveRoomDrawer(tab.id)}
+                        className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition ${
+                          activeRoomDrawer === tab.id
+                            ? 'bg-[#46613e] text-white'
+                            : 'bg-white/80 dark:bg-[#2a382d] text-[#3d5240] dark:text-[#c7d7c9]'
+                        }`}
+                      >
+                        {tab.label}
+                      </button>
+                    ))}
+                  </>
+                ) : (
+                  <span className="text-sm font-bold font-serif-healing text-[#273829] dark:text-[#edf2e8]">
+                    {activeRoomDrawer === 'open_letters'
+                      ? 'Bưu Điện Ký Ức · Thư chưa gửi'
+                      : activeRoomDrawer === 'open_wishes'
+                        ? 'Cây Ước Nguyện & Ý Niệm Lành'
+                        : activeRoomDrawer === 'open_seven_nights'
+                          ? '7 Đêm Tử Tế Cùng Heali'
+                          : activeRoomDrawer === 'open_difficult_dates'
+                            ? 'Những Ngày Dễ Chùng Lòng'
+                            : activeRoomDrawer === 'open_ai_mirror'
+                              ? 'Gương AI Đồng Cảm'
+                              : activeRoomDrawer === 'open_lake_2d'
+                                ? 'Hồ Hoa Đăng (Bản 2D Tiết Kiệm Pin)'
+                                : activeRoomDrawer === 'open_privacy'
+                                  ? 'Quyền Riêng Tư & An Toàn'
+                                  : 'Phòng Tâm Linh Heali'}
+                  </span>
+                )}
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setActiveRoomDrawer(null)}
+                className="min-h-[38px] inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#e7e5da] dark:bg-[#2a372d] hover:bg-[#dad8cb] text-xs font-semibold text-[#273829] dark:text-[#edf2e8] transition"
+              >
+                <X className="w-4 h-4" />
+                <span>Về phòng 3D</span>
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-4 sm:p-6">
+              {activeRoomDrawer === 'open_journal' && (
+                <JournalView
+                  lowMotion={prefs.lowMotion}
+                  embeddedIn3DRoom
+                  onOpenBreathing={() => {
+                    enter3DRoom('calm');
+                    setActiveRoomDrawer('open_calm_breathe');
+                  }}
+                  onOpenCalmGrounding={() => {
+                    enter3DRoom('calm');
+                    setActiveRoomDrawer('open_calm_grounding');
+                  }}
+                />
+              )}
+
+              {activeRoomDrawer === 'open_mood_checkin' && (
+                <PersonalJourneyDashboard
+                  lowMotion={prefs.lowMotion}
+                  embeddedIn3DRoom
+                  onOpenJournal={() => {
+                    enter3DRoom('journal');
+                    setActiveRoomDrawer('open_journal');
+                  }}
+                  onOpenWishes={() => {
+                    enter3DRoom('wishes');
+                    setActiveRoomDrawer('open_wishes');
+                  }}
+                  onOpenCalm={() => {
+                    enter3DRoom('calm');
+                    setActiveRoomDrawer('open_calm_breathe');
+                  }}
+                  onOpenDailyCard={() => {
+                    setActiveRoomDrawer(null);
+                    setIsDailyCardModalOpen(true);
+                  }}
+                  onOpenSendGift={() => {
+                    setActiveRoomDrawer(null);
+                    setIsSendGiftModalOpen(true);
+                  }}
+                  lighterFeedbackAnsweredToday={
+                    prefs.lighterFeedbackAnsweredAt === new Date().toISOString().slice(0, 10)
+                  }
+                  onAnswerLighterFeedback={markLighterFeedbackAnswered}
+                />
+              )}
+
+              {activeRoomDrawer === 'open_letters' && (
+                <UnsentLettersView
+                  lowMotion={prefs.lowMotion}
+                  embeddedIn3DRoom
+                  prefillContent={letterPrefill}
+                  onClearPrefill={() => setLetterPrefill(null)}
+                />
+              )}
+
+              {activeRoomDrawer === 'open_wishes' && (
+                <WishTreeView lowMotion={prefs.lowMotion} embeddedIn3DRoom />
+              )}
+
+              {(activeRoomDrawer === 'open_calm_breathe' ||
+                activeRoomDrawer === 'open_calm_audio' ||
+                activeRoomDrawer === 'open_calm_grounding' ||
+                activeRoomDrawer === 'open_calm_compassion' ||
+                activeRoomDrawer === 'open_calm_reframe') && (
+                <CalmTabView
+                  initialTool={
+                    activeRoomDrawer === 'open_calm_audio'
+                      ? 'audio'
+                      : activeRoomDrawer === 'open_calm_grounding'
+                        ? 'grounding'
+                        : activeRoomDrawer === 'open_calm_compassion'
+                          ? 'compassion'
+                          : activeRoomDrawer === 'open_calm_reframe'
+                            ? 'reframe'
+                            : 'breathe'
+                  }
+                  lowMotion={prefs.lowMotion}
+                  embeddedIn3DRoom
+                  onOpenExUrgeModal={() => {
+                    setActiveRoomDrawer(null);
+                    setIsExUrgeOpen(true);
+                  }}
+                />
+              )}
+
+              {activeRoomDrawer === 'open_confessions' && (
+                <ConfessionsFeed lowMotion={prefs.lowMotion} embeddedIn3DRoom />
+              )}
+
+              {activeRoomDrawer === 'open_stranger_chat' && (
+                <StrangerChatView lowMotion={prefs.lowMotion} embeddedIn3DRoom />
+              )}
+
+              {(activeRoomDrawer === 'open_spiritual_tarot' ||
+                activeRoomDrawer === 'open_spiritual_tuvi' ||
+                activeRoomDrawer === 'open_spiritual_chairs') && (
+                <SpiritualRoomView
+                  lowMotion={prefs.lowMotion}
+                  embeddedIn3DRoom
+                  initialSubTab={
+                    activeRoomDrawer === 'open_spiritual_tuvi'
+                      ? 'tuvi'
+                      : activeRoomDrawer === 'open_spiritual_chairs'
+                        ? 'chairs'
+                        : 'tarot'
+                  }
+                />
+              )}
+
+              {activeRoomDrawer === 'open_seven_nights' && (
+                <SevenNightsGentleCard
+                  completedNights={prefs.completedChallengeNights}
+                  onToggleNight={toggleChallengeNight}
+                  onOpenAction={(target) => {
+                    markFirstUsefulAction();
+                    if (target === 'breathe') {
+                      setActiveRoomDrawer('open_calm_breathe');
+                    } else if (target === 'grounding') {
+                      setActiveRoomDrawer('open_calm_grounding');
+                    } else if (target === 'audio') {
+                      setActiveRoomDrawer('open_calm_audio');
+                    } else if (target === 'journal') {
+                      setActiveRoomDrawer('open_journal');
+                    } else if (target === 'letters') {
+                      setActiveRoomDrawer('open_letters');
+                    } else if (target === 'helpline') {
+                      setActiveRoomDrawer(null);
+                      setIsHelplineOpen(true);
+                    }
+                  }}
+                />
+              )}
+
+              {activeRoomDrawer === 'open_difficult_dates' && (
+                <DifficultDatesCard
+                  dates={prefs.difficultDates}
+                  onAddDate={addDifficultDate}
+                  onToggleNotify={toggleDifficultDateNotify}
+                  onRemoveDate={removeDifficultDate}
+                  onOpenHelpline={() => {
+                    setActiveRoomDrawer(null);
+                    setIsHelplineOpen(true);
+                  }}
+                />
+              )}
+
+              {activeRoomDrawer === 'open_ai_mirror' && (
+                <AiCompanionCard
+                  language={prefs.language}
+                  enabled={prefs.aiCompanionEnabled}
+                  consentAccepted={prefs.aiConsentAccepted}
+                  onToggleEnabled={toggleAiCompanion}
+                  onAcceptConsent={setAiConsentAccepted}
+                  onOpenHelpline={() => {
+                    setActiveRoomDrawer(null);
+                    setIsHelplineOpen(true);
+                  }}
+                  onOpenBreathing={() => setActiveRoomDrawer('open_calm_breathe')}
+                  onOpenJournal={() => setActiveRoomDrawer('open_journal')}
+                />
+              )}
+
+              {activeRoomDrawer === 'open_lake_2d' && (
+                <ExploreLake2DView
+                  lowMotion={prefs.lowMotion}
+                  onOpenFloatModal={() => {
+                    setActiveRoomDrawer(null);
+                    setIsFloatModalOpen(true);
+                  }}
+                  onOpen3DWorld={() => {
+                    setActiveRoomDrawer(null);
+                    enter3DRoom('lake');
+                  }}
+                  onOpenSpiritualRoom={() => setActiveRoomDrawer('open_spiritual_tarot')}
+                  onOpenPrivacy={() => setActiveRoomDrawer('open_privacy')}
+                  onOpenSendGift={() => {
+                    setActiveRoomDrawer(null);
+                    setIsSendGiftModalOpen(true);
+                  }}
+                  onOpenLanternNight={() => {
+                    setActiveRoomDrawer(null);
+                    navigatePath('/dem-hoa-dang');
+                  }}
+                />
+              )}
+
+              {activeRoomDrawer === 'open_privacy' && (
+                <PrivacyAndSafetyView
+                  theme={prefs.theme}
+                  lowMotion={prefs.lowMotion}
+                  analyticsOptOut={prefs.analyticsOptOut}
+                  language={prefs.language}
+                  aiCompanionEnabled={prefs.aiCompanionEnabled}
+                  onToggleTheme={toggleTheme}
+                  onToggleLowMotion={toggleLowMotion}
+                  onToggleAnalyticsOptOut={toggleAnalyticsOptOut}
+                  onChangeLanguage={setLanguage}
+                  onToggleAiCompanion={() => toggleAiCompanion()}
+                  onOpenQuarterlyReport={() => {
+                    setActiveRoomDrawer(null);
+                    setQuarterlyModalTab('report');
+                    setIsQuarterlyModalOpen(true);
+                  }}
+                  onOpenPartnerInquiry={() => {
+                    setActiveRoomDrawer(null);
+                    setQuarterlyModalTab('partner');
+                    setIsQuarterlyModalOpen(true);
+                  }}
+                  onOpenProfileModal={() => {
+                    setActiveRoomDrawer(null);
+                    setIsProfileOpen(true);
+                  }}
+                  onOpenHelplineModal={() => {
+                    setActiveRoomDrawer(null);
+                    setIsHelplineOpen(true);
+                  }}
+                  onReopenOnboarding={() => {
+                    setActiveRoomDrawer(null);
+                    reopenOnboarding();
+                  }}
+                />
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Mobile / Tablet Bottom Navigation (3D Room Dock in 3D Mode, 4-Group Nav in Classic Mode) */}
       <nav
         aria-label="Điều hướng di động"
         className="lg:hidden fixed bottom-0 inset-x-0 z-40 bg-[#fafaf4]/96 dark:bg-[#182019]/96 border-t border-[#dfe3d6] dark:border-[#2c3a2e] py-1.5 px-2 pb-safe"
       >
-        <div className="grid grid-cols-4 gap-1">
-          {primaryGroups.map((group) => {
-            const Icon = group.icon;
-            const isCurrent = activeGroup === group.id;
-            return (
-              <button
-                key={group.id}
-                type="button"
-                onClick={() => setActiveGroup(group.id)}
-                className={`min-h-[48px] flex flex-col items-center justify-center gap-0.5 py-1 px-1 rounded-xl transition ${
-                  isCurrent
-                    ? 'text-[#46613e] dark:text-[#98c18e] font-semibold bg-[#e6efe2]/70 dark:bg-[#243227]'
-                    : 'text-[#6c7d6d] dark:text-[#a6b7a8] hover:text-[#273829] dark:hover:text-[#edf2e8]'
-                }`}
-              >
-                <Icon className="w-4 h-4 shrink-0" />
-                <span className="text-[11px] tracking-tight whitespace-nowrap truncate max-w-full">
-                  {group.label}
-                </span>
-              </button>
-            );
-          })}
-        </div>
+        {appViewMode === '3d_game' ? (
+          <div className="flex items-center gap-1 overflow-x-auto scrollbar-none">
+            {gameRoomNavItems.map((room) => {
+              const Icon = room.icon;
+              const isCurrent = current3DRoom === room.id;
+              return (
+                <button
+                  key={room.id}
+                  type="button"
+                  onClick={() => enter3DRoom(room.id)}
+                  className={`min-h-[46px] min-w-[72px] flex flex-col items-center justify-center gap-0.5 py-1 px-2 rounded-xl transition shrink-0 ${
+                    isCurrent
+                      ? 'text-white font-semibold bg-[#46613e]'
+                      : 'text-[#6c7d6d] dark:text-[#a6b7a8] hover:text-[#273829] dark:hover:text-[#edf2e8]'
+                  }`}
+                >
+                  <Icon className="w-4 h-4 shrink-0" />
+                  <span className="text-[10px] tracking-tight whitespace-nowrap">
+                    {room.label}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="grid grid-cols-4 gap-1">
+            {primaryGroups.map((group) => {
+              const Icon = group.icon;
+              const isCurrent = activeGroup === group.id;
+              return (
+                <button
+                  key={group.id}
+                  type="button"
+                  onClick={() => setActiveGroup(group.id)}
+                  className={`min-h-[48px] flex flex-col items-center justify-center gap-0.5 py-1 px-1 rounded-xl transition ${
+                    isCurrent
+                      ? 'text-[#46613e] dark:text-[#98c18e] font-semibold bg-[#e6efe2]/70 dark:bg-[#243227]'
+                      : 'text-[#6c7d6d] dark:text-[#a6b7a8] hover:text-[#273829] dark:hover:text-[#edf2e8]'
+                  }`}
+                >
+                  <Icon className="w-4 h-4 shrink-0" />
+                  <span className="text-[11px] tracking-tight whitespace-nowrap truncate max-w-full">
+                    {group.label}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        )}
       </nav>
 
       {/* Floating Audio & Breathing Bar */}
-      <AudioPlayerDrawer />
+      <AudioPlayerDrawer
+        isVisible={isAudioBarVisible}
+        onDismiss={() => updateAudioBarVisible(false)}
+        onRestore={() => updateAudioBarVisible(true)}
+      />
 
       {/* 3-Step Skippable Onboarding */}
       {!prefs.onboardingDone && (
@@ -1124,9 +1719,11 @@ export default function App() {
         theme={prefs.theme}
         lowMotion={prefs.lowMotion}
         language={prefs.language}
+        isAudioBarVisible={isAudioBarVisible}
         onToggleTheme={toggleTheme}
         onToggleLowMotion={toggleLowMotion}
         onChangeLanguage={setLanguage}
+        onToggleAudioBar={() => updateAudioBarVisible(!isAudioBarVisible)}
       />
 
       <SendLanternGiftModal
@@ -1146,6 +1743,15 @@ export default function App() {
         onClose={() => setIsQuarterlyModalOpen(false)}
         language={prefs.language}
         initialTab={quarterlyModalTab}
+      />
+
+      <AllFeaturesHubModal
+        isOpen={isAllFeaturesOpen}
+        onClose={() => setIsAllFeaturesOpen(false)}
+        onSelectRegion={teleport3DRegion}
+        onSelectAction={handleTriggerRoomAction}
+        onNavigateRoute={navigatePath}
+        onOpenOnboarding={reopenOnboarding}
       />
     </div>
   );

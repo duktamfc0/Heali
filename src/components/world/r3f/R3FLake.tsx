@@ -1,8 +1,9 @@
-import React, { useMemo, useRef } from 'react';
+import React, { useEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
+import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { useFrame } from '@react-three/fiber';
 import { Float } from '@react-three/drei';
-import { getWaterRippleTexture, getWoodPlankTexture } from '../ProceduralTextures';
+import { getWoodPlankTexture } from '../ProceduralTextures';
 import {
   LAKE_CENTER,
   LAKE_RADIUS_X,
@@ -11,6 +12,7 @@ import {
   streamCenterX,
 } from './worldLayout';
 import { ArchedWoodenBridgeR3F } from './R3FNature';
+import { liveSceneActivity } from './roomTypes';
 
 export interface FloatingLanternData {
   id: string;
@@ -21,27 +23,142 @@ export interface FloatingLanternData {
 export const ReflectiveLake: React.FC<{
   onSelectLantern?: (id: string) => void;
 }> = ({ onSelectLantern }) => {
-  const rippleTex = useMemo(() => {
-    const t = getWaterRippleTexture();
-    t.repeat.set(10, 10);
-    return t;
-  }, []);
-
-  const streamRippleTex = useMemo(() => {
-    const t = getWaterRippleTexture();
-    t.repeat.set(2.5, 24);
-    return t;
-  }, []);
-
   const foamMatRef = useRef<THREE.MeshBasicMaterial>(null);
 
   const woodTex = getWoodPlankTexture();
   const woodMat = useMemo(
-    () => new THREE.MeshStandardMaterial({ map: woodTex, roughness: 0.85 }),
+    () => new THREE.MeshStandardMaterial({ map: woodTex, color: 0x8a6345, roughness: 0.78, metalness: 0.05 }),
     [woodTex]
   );
   const brassMat = useMemo(
-    () => new THREE.MeshStandardMaterial({ color: 0xd99b43, metalness: 0.7, roughness: 0.28 }),
+    () => new THREE.MeshStandardMaterial({ color: 0xd4af37, metalness: 0.85, roughness: 0.24 }),
+    []
+  );
+
+  // Custom GLSL Shader for emerald-teal rippling sky-island lake
+  const lakeWaterMat = useMemo(
+    () =>
+      new THREE.ShaderMaterial({
+        uniforms: {
+          uTime: { value: 0 },
+          uDeepColor: { value: new THREE.Color('#0e5c6b') },
+          uShallowColor: { value: new THREE.Color('#29989e') },
+          uGlowColor: { value: new THREE.Color('#f5d896') },
+        },
+        vertexShader: `
+          uniform float uTime;
+          varying vec2 vUv;
+          varying vec3 vWorldPos;
+          void main() {
+            vUv = uv;
+            vec4 worldPos = modelMatrix * vec4(position, 1.0);
+            worldPos.y += sin(worldPos.x * 0.45 + uTime * 1.1) * 0.014
+                        + cos(worldPos.z * 0.52 - uTime * 0.95) * 0.012;
+            vWorldPos = worldPos.xyz;
+            gl_Position = projectionMatrix * viewMatrix * worldPos;
+          }
+        `,
+        fragmentShader: `
+          uniform float uTime;
+          uniform vec3 uDeepColor;
+          uniform vec3 uShallowColor;
+          uniform vec3 uGlowColor;
+          varying vec2 vUv;
+          varying vec3 vWorldPos;
+
+          void main() {
+            float radial = length(vUv - 0.5) * 2.0;
+            vec3 col = mix(uDeepColor, uShallowColor, smoothstep(0.18, 0.96, radial));
+
+            float r1 = sin(vWorldPos.x * 1.35 + uTime * 1.4 + sin(vWorldPos.z * 1.15) * 1.65);
+            float r2 = cos(vWorldPos.z * 1.55 - uTime * 1.18 + cos(vWorldPos.x * 0.9) * 1.2);
+            float r3 = sin((vWorldPos.x + vWorldPos.z) * 2.4 - uTime * 1.9);
+            float caustic = smoothstep(0.54, 0.98, (r1 + r2) * 0.42 + r3 * 0.16);
+            col += vec3(0.18, 0.34, 0.36) * caustic * 0.5;
+
+            float specularGlint = pow(clamp(caustic, 0.0, 1.0), 3.0) * 0.6;
+            float shoreFoam = smoothstep(0.88, 1.0, radial) * (0.35 + 0.25 * r1);
+            col += uGlowColor * specularGlint;
+            col = mix(col, vec3(0.86, 0.97, 0.96), shoreFoam * 0.48);
+
+            gl_FragColor = vec4(col, 1.0);
+          }
+        `,
+      }),
+    []
+  );
+
+  // Custom GLSL flowing turquoise mountain brook current shader
+  const streamWaterMat = useMemo(
+    () =>
+      new THREE.ShaderMaterial({
+        uniforms: {
+          uTime: { value: 0 },
+          uBaseColor: { value: new THREE.Color('#2b838b') },
+          uHighlightColor: { value: new THREE.Color('#b8ecee') },
+        },
+        vertexShader: `
+          varying vec2 vUv;
+          void main() {
+            vUv = uv;
+            gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+          }
+        `,
+        fragmentShader: `
+          uniform float uTime;
+          uniform vec3 uBaseColor;
+          uniform vec3 uHighlightColor;
+          varying vec2 vUv;
+
+          void main() {
+            float flow = vUv.y - uTime * 0.65;
+            float streak1 = sin(vUv.x * 14.0 + sin(flow * 4.5) * 2.0);
+            float streak2 = cos(flow * 11.0 + vUv.x * 6.0);
+            float foam = smoothstep(0.58, 0.96, (streak1 + streak2) * 0.5);
+            vec3 col = mix(uBaseColor, uHighlightColor, foam * 0.52);
+            gl_FragColor = vec4(col, 1.0);
+          }
+        `,
+      }),
+    []
+  );
+
+  // Custom GLSL animated vertical scrolling waterfall aqua mist shader
+  const waterfallMat = useMemo(
+    () =>
+      new THREE.ShaderMaterial({
+        transparent: true,
+        side: THREE.DoubleSide,
+        uniforms: {
+          uTime: { value: 0 },
+          uWaterColor: { value: new THREE.Color('#77cde0') },
+          uFoamColor: { value: new THREE.Color('#f4fcfd') },
+        },
+        vertexShader: `
+          varying vec2 vUv;
+          void main() {
+            vUv = uv;
+            gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+          }
+        `,
+        fragmentShader: `
+          uniform float uTime;
+          uniform vec3 uWaterColor;
+          uniform vec3 uFoamColor;
+          varying vec2 vUv;
+
+          void main() {
+            float scrollY = vUv.y + uTime * 1.85;
+            float streaks = sin(vUv.x * 24.0) * 0.4 + sin(scrollY * 18.0 + vUv.x * 9.0) * 0.6;
+            float froth = smoothstep(0.18, 0.85, streaks);
+            float topBottomFoam = smoothstep(0.24, 0.0, vUv.y) + smoothstep(0.84, 1.0, vUv.y);
+            float white = clamp(froth * 0.68 + topBottomFoam * 0.6, 0.0, 1.0);
+            vec3 col = mix(uWaterColor, uFoamColor, white);
+            float alpha = 0.72 + white * 0.24;
+            gl_FragColor = vec4(col, alpha);
+          }
+        `,
+      }),
     []
   );
 
@@ -63,7 +180,6 @@ export const ReflectiveLake: React.FC<{
       const nextCx = streamCenterX(z + 0.5);
       const slope = (nextCx - cx) / 0.5;
       const invNorm = 1 / Math.sqrt(1 + slope * slope);
-      // Perpendicular vector across stream
       const nx = invNorm;
       const nz = -slope * invNorm;
 
@@ -85,14 +201,186 @@ export const ReflectiveLake: React.FC<{
     return geo;
   }, []);
 
-  // Animate gentle water current flow & waterfall foam pulse
-  useFrame((state, delta) => {
-    const dt = Math.min(0.05, delta);
-    rippleTex.offset.x += dt * 0.012;
-    rippleTex.offset.y += dt * 0.008;
-    streamRippleTex.offset.y -= dt * 0.14;
+  const pierWoodGeo = useMemo(() => {
+    const parts: THREE.BufferGeometry[] = [];
+    for (let idx = 0; idx < 16; idx++) {
+      const plank = new THREE.BoxGeometry(2.15, 0.08, 0.39);
+      plank.translate(0, 0.14, idx * 0.45);
+      parts.push(plank);
+    }
+    const leftBeam = new THREE.BoxGeometry(0.12, 0.12, 7.2);
+    leftBeam.translate(-0.95, 0.07, 3.4);
+    parts.push(leftBeam);
+
+    const rightBeam = new THREE.BoxGeometry(0.12, 0.12, 7.2);
+    rightBeam.translate(0.95, 0.07, 3.4);
+    parts.push(rightBeam);
+
+    const posts: Array<[number, number]> = [
+      [-1.0, 0.2],
+      [1.0, 0.2],
+      [-1.0, 3.4],
+      [1.0, 3.4],
+      [-1.0, 6.8],
+      [1.0, 6.8],
+    ];
+    for (const [px, pz] of posts) {
+      const post = new THREE.CylinderGeometry(0.08, 0.095, 1.15, 8);
+      post.translate(px, 0.15, pz);
+      parts.push(post);
+    }
+    const nonIdx = parts.map((g) => (g.index ? g.toNonIndexed() : g));
+    const merged = mergeGeometries(nonIdx, false);
+    nonIdx.forEach((g) => g.dispose());
+    parts.forEach((g) => g.dispose());
+    merged.computeBoundingSphere();
+    merged.computeBoundingBox();
+    return merged;
+  }, []);
+
+  const lotusAssets = useMemo(() => {
+    const mergeTransformed = (items: THREE.BufferGeometry[]) => {
+      const norm = items.map((g) => (g.index ? g.toNonIndexed() : g));
+      const m = mergeGeometries(norm, false);
+      norm.forEach((g) => g.dispose());
+      items.forEach((g) => g.dispose());
+      m.computeBoundingSphere();
+      return m;
+    };
+
+    const haloGeo = new THREE.RingGeometry(0.42, 0.72, 20);
+    haloGeo.rotateX(-Math.PI / 2);
+    haloGeo.translate(0, -0.02, 0);
+
+    const padGeo = new THREE.CircleGeometry(0.42, 16, 0, Math.PI * 1.86);
+    padGeo.rotateX(-Math.PI / 2);
+    padGeo.translate(0, 0.01, 0);
+
+    const outerEvenParts: THREE.BufferGeometry[] = [];
+    const outerOddParts: THREE.BufferGeometry[] = [];
+    const euler = new THREE.Euler();
+    const quat = new THREE.Quaternion();
+    const mat4 = new THREE.Matrix4();
+    const one = new THREE.Vector3(1, 1, 1);
+
+    for (let pIdx = 0; pIdx < 8; pIdx++) {
+      const ang = (pIdx / 8) * Math.PI * 2;
+      const g = new THREE.ConeGeometry(0.095, 0.26, 5);
+      euler.set(0, -ang, -0.78, 'XYZ');
+      quat.setFromEuler(euler);
+      mat4.compose(new THREE.Vector3(Math.cos(ang) * 0.16, 0.1, Math.sin(ang) * 0.16), quat, one);
+      g.applyMatrix4(mat4);
+      if (pIdx % 2 === 0) outerEvenParts.push(g);
+      else outerOddParts.push(g);
+    }
+
+    const innerParts: THREE.BufferGeometry[] = [];
+    for (let pIdx = 0; pIdx < 6; pIdx++) {
+      const ang = (pIdx / 6) * Math.PI * 2 + 0.25;
+      const g = new THREE.ConeGeometry(0.068, 0.21, 5);
+      euler.set(0, -ang, -0.45, 'XYZ');
+      quat.setFromEuler(euler);
+      mat4.compose(new THREE.Vector3(Math.cos(ang) * 0.1, 0.14, Math.sin(ang) * 0.1), quat, one);
+      g.applyMatrix4(mat4);
+      innerParts.push(g);
+    }
+
+    const coreGeo = new THREE.SphereGeometry(0.095, 10, 8);
+    coreGeo.translate(0, 0.17, 0);
+
+    return {
+      haloGeo,
+      padGeo,
+      outerEvenGeo: mergeTransformed(outerEvenParts),
+      outerOddGeo: mergeTransformed(outerOddParts),
+      innerGeo: mergeTransformed(innerParts),
+      coreGeo,
+      haloMat: new THREE.MeshBasicMaterial({
+        color: '#fde68a',
+        transparent: true,
+        opacity: 0.26,
+        depthWrite: false,
+      }),
+      padMat: new THREE.MeshStandardMaterial({
+        color: '#3c7349',
+        roughness: 0.68,
+        metalness: 0.04,
+        side: THREE.DoubleSide,
+      }),
+      outerEvenMat: new THREE.MeshStandardMaterial({
+        color: '#fbcfe8',
+        emissive: '#f472b6',
+        emissiveIntensity: 0.28,
+        roughness: 0.45,
+      }),
+      outerOddMat: new THREE.MeshStandardMaterial({
+        color: '#f9a8d4',
+        emissive: '#ec4899',
+        emissiveIntensity: 0.28,
+        roughness: 0.45,
+      }),
+      innerMat: new THREE.MeshStandardMaterial({
+        color: '#fef3c7',
+        emissive: '#fbbf24',
+        emissiveIntensity: 0.55,
+        roughness: 0.35,
+      }),
+      coreMat: new THREE.MeshStandardMaterial({
+        color: '#fffbeb',
+        emissive: '#fbbf24',
+        emissiveIntensity: 1.45,
+        toneMapped: false,
+      }),
+    };
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      woodMat.dispose();
+      brassMat.dispose();
+      lakeWaterMat.dispose();
+      streamWaterMat.dispose();
+      waterfallMat.dispose();
+      streamGeo.dispose();
+      pierWoodGeo.dispose();
+      lotusAssets.haloGeo.dispose();
+      lotusAssets.padGeo.dispose();
+      lotusAssets.outerEvenGeo.dispose();
+      lotusAssets.outerOddGeo.dispose();
+      lotusAssets.innerGeo.dispose();
+      lotusAssets.coreGeo.dispose();
+      lotusAssets.haloMat.dispose();
+      lotusAssets.padMat.dispose();
+      lotusAssets.outerEvenMat.dispose();
+      lotusAssets.outerOddMat.dispose();
+      lotusAssets.innerMat.dispose();
+      lotusAssets.coreMat.dispose();
+    };
+  }, [woodMat, brassMat, lakeWaterMat, streamWaterMat, waterfallMat, streamGeo, pierWoodGeo, lotusAssets]);
+
+  // Animate shaders & waterfall foam pulse
+  useFrame((state) => {
+    if (!liveSceneActivity.isOutdoor) return;
+    const t = state.clock.getElapsedTime();
+    lakeWaterMat.uniforms.uTime.value = t;
+    streamWaterMat.uniforms.uTime.value = t;
+    waterfallMat.uniforms.uTime.value = t;
+
     if (foamMatRef.current) {
-      foamMatRef.current.opacity = 0.55 + Math.sin(state.clock.getElapsedTime() * 3.5) * 0.14;
+      foamMatRef.current.opacity = 0.55 + Math.sin(t * 3.5) * 0.14;
+    }
+    if (koiGroupRef.current) {
+      koiGroupRef.current.children.forEach((koi, idx) => {
+        const spec = koiSpecs[idx];
+        if (!spec) return;
+        const ang = t * spec.speed + spec.phase;
+        koi.position.set(
+          spec.cx + Math.cos(ang) * spec.r,
+          0.035 + Math.sin(t * 2.2 + idx) * 0.008,
+          spec.cz + Math.sin(ang) * spec.r * 0.72
+        );
+        koi.rotation.y = -ang;
+      });
     }
   });
 
@@ -134,24 +422,7 @@ export const ReflectiveLake: React.FC<{
     []
   );
 
-  useFrame((state) => {
-    const t = state.clock.getElapsedTime();
-    if (koiGroupRef.current) {
-      koiGroupRef.current.children.forEach((koi, idx) => {
-        const spec = koiSpecs[idx];
-        if (!spec) return;
-        const ang = t * spec.speed + spec.phase;
-        koi.position.set(
-          spec.cx + Math.cos(ang) * spec.r,
-          0.035 + Math.sin(t * 2.2 + idx) * 0.008,
-          spec.cz + Math.sin(ang) * spec.r * 0.72
-        );
-        koi.rotation.y = -ang;
-      });
-    }
-  });
-
-  // Curved stepping stone bridge from pier/shore toward waterside pavilion (-11, 29)
+  // Curved stepping stone bridge from pier/shore toward waterside pavilion (-14.5, 28.8)
   const steppingStones = useMemo(() => {
     const stones: Array<{ x: number; z: number; rot: number; scale: number }> = [];
     const count = 9;
@@ -166,39 +437,22 @@ export const ReflectiveLake: React.FC<{
 
   return (
     <group>
-      {/* 1. Ho Hoa Dang Lake Water Disc */}
+      {/* 1. Ho Hoa Dang Lake Water Disc (Animated GLSL Ripple & Lantern Caustic Shader) */}
       <mesh
         position={[LAKE_CENTER.x, 0.02, LAKE_CENTER.z]}
         rotation-x={-Math.PI / 2}
         scale={[LAKE_RADIUS_X + 2.8, LAKE_RADIUS_Z + 2.4, 1]}
+        material={lakeWaterMat}
         receiveShadow
       >
         <circleGeometry args={[1, 64]} />
-        <meshStandardMaterial
-          color="#2f6659"
-          roughness={0.12}
-          metalness={0.32}
-          envMapIntensity={1.25}
-          normalMap={rippleTex}
-          normalScale={new THREE.Vector2(0.28, 0.28)}
-        />
       </mesh>
 
       {/* 2. Flowing Winding Mountain Brook */}
-      <mesh geometry={streamGeo} receiveShadow>
-        <meshStandardMaterial
-          color="#3e7668"
-          roughness={0.12}
-          metalness={0.28}
-          envMapIntensity={1.2}
-          normalMap={streamRippleTex}
-          normalScale={new THREE.Vector2(0.32, 0.32)}
-        />
-      </mesh>
+      <mesh geometry={streamGeo} material={streamWaterMat} receiveShadow />
 
       {/* 3A. North-East Multi-Tiered Mountain Cascade Waterfall & Splash Pool */}
       <group position={[cascadeX, 0.04, -47.5]} rotation-y={-0.38}>
-        {/* Mossy limestone crag backing cliff */}
         <mesh position={[0, 2.2, -2.1]} scale={[2.6, 2.5, 1.3]} castShadow receiveShadow>
           <dodecahedronGeometry args={[1.6, 1]} />
           <meshStandardMaterial color="#67726a" roughness={0.92} />
@@ -212,31 +466,13 @@ export const ReflectiveLake: React.FC<{
           <meshStandardMaterial color="#5c6960" roughness={0.92} />
         </mesh>
 
-        {/* Upper cliff chute */}
-        <mesh position={[0, 2.35, -1.35]} rotation-x={0.42}>
+        {/* Upper cliff chute (Animated Waterfall GLSL) */}
+        <mesh position={[0, 2.35, -1.35]} rotation-x={0.42} material={waterfallMat}>
           <planeGeometry args={[2.6, 3.2]} />
-          <meshStandardMaterial
-            color="#d9f3ec"
-            emissive="#9cd1c3"
-            emissiveIntensity={0.32}
-            roughness={0.12}
-            transparent
-            opacity={0.82}
-            side={THREE.DoubleSide}
-          />
         </mesh>
         {/* Mid ledge cascade */}
-        <mesh position={[0, 1.05, -0.45]} rotation-x={0.38}>
+        <mesh position={[0, 1.05, -0.45]} rotation-x={0.38} material={waterfallMat}>
           <planeGeometry args={[3.2, 2.1]} />
-          <meshStandardMaterial
-            color="#eafaf5"
-            emissive="#b5e0d4"
-            emissiveIntensity={0.34}
-            roughness={0.12}
-            transparent
-            opacity={0.86}
-            side={THREE.DoubleSide}
-          />
         </mesh>
         {/* Splash Pool Foam Rings */}
         <mesh position={[0, 0.05, 0.75]} rotation-x={-Math.PI / 2}>
@@ -261,17 +497,8 @@ export const ReflectiveLake: React.FC<{
           <dodecahedronGeometry args={[1.5, 1]} />
           <meshStandardMaterial color="#627068" roughness={0.92} />
         </mesh>
-        <mesh position={[0, 1.85, -0.8]} rotation-x={0.32}>
+        <mesh position={[0, 1.85, -0.8]} rotation-x={0.32} material={waterfallMat}>
           <planeGeometry args={[2.1, 3.9]} />
-          <meshStandardMaterial
-            color="#e2f6f0"
-            emissive="#aad9ce"
-            emissiveIntensity={0.32}
-            roughness={0.14}
-            transparent
-            opacity={0.82}
-            side={THREE.DoubleSide}
-          />
         </mesh>
         <mesh position={[0, 0.08, 0.35]} rotation-x={-Math.PI / 2}>
           <circleGeometry args={[2.1, 20]} />
@@ -295,7 +522,7 @@ export const ReflectiveLake: React.FC<{
         />
       ))}
 
-      {/* 4B. Waterside Golden Sunset Tea Pavilion & Curved Stepping-Stone Bridge (Panel 2) */}
+      {/* 4B. Waterside Golden Sunset Tea Pavilion & Curved Stepping-Stone Bridge */}
       <group
         position={[-14.5, 0.16, 28.8]}
         rotation-y={0.62}
@@ -322,19 +549,24 @@ export const ReflectiveLake: React.FC<{
             </mesh>
           </React.Fragment>
         ))}
-        {/* Curved Golden Two-Tier Pavilion Eaves */}
+        {/* Curved Vermilion & Cedar Two-Tier Pavilion Eaves */}
         <mesh position={[0, 2.38, 0]} rotation-y={Math.PI / 4} castShadow>
           <coneGeometry args={[2.95, 0.78, 4]} />
-          <meshStandardMaterial color="#b9833a" roughness={0.65} metalness={0.22} />
+          <meshStandardMaterial color="#8c2320" roughness={0.6} metalness={0.08} />
         </mesh>
         <mesh position={[0, 2.86, 0]} rotation-y={Math.PI / 4} castShadow>
           <coneGeometry args={[1.75, 0.72, 4]} />
-          <meshStandardMaterial color="#d49e4f" roughness={0.55} metalness={0.28} />
+          <meshStandardMaterial color="#6b4423" roughness={0.62} metalness={0.08} />
         </mesh>
-        {/* Warm Pavilion Paper Lantern */}
+        {/* Warm Amber Pavilion Lantern Orb */}
         <mesh position={[0, 1.75, 0]}>
           <sphereGeometry args={[0.2, 10, 8]} />
-          <meshStandardMaterial color="#fffbeb" emissive="#fbbf24" emissiveIntensity={0.95} />
+          <meshStandardMaterial
+            color="#fffbeb"
+            emissive="#fbbf24"
+            emissiveIntensity={1.45}
+            toneMapped={false}
+          />
         </mesh>
       </group>
 
@@ -347,11 +579,11 @@ export const ReflectiveLake: React.FC<{
           receiveShadow
         >
           <cylinderGeometry args={[st.scale, st.scale * 1.08, 0.14, 9]} />
-          <meshStandardMaterial color="#b4aba0" roughness={0.85} />
+          <meshStandardMaterial color="#8b948c" roughness={0.88} metalness={0.04} />
         </mesh>
       ))}
 
-      {/* 5. Rustic Wooden Lakeside Pier Entering Ho Hoa Dang */}
+      {/* 5. Rustic Wooden Lakeside Pier Entering Ho Hoa Dang with Hội An Silk Lanterns */}
       <group
         position={[0, 0.24, 19.6]}
         onClick={(e) => {
@@ -359,54 +591,26 @@ export const ReflectiveLake: React.FC<{
           onSelectLantern?.('pier');
         }}
       >
-        {Array.from({ length: 16 }).map((_, idx) => {
-          const pz = idx * 0.45;
-          return (
-            <mesh
-              key={`plank_${idx}`}
-              position={[0, 0.14, pz]}
-              material={woodMat}
-              castShadow
-              receiveShadow
-            >
-              <boxGeometry args={[2.15, 0.08, 0.39]} />
-            </mesh>
-          );
-        })}
-
-        <mesh position={[-0.95, 0.07, 3.4]} material={woodMat} castShadow>
-          <boxGeometry args={[0.12, 0.12, 7.2]} />
-        </mesh>
-        <mesh position={[0.95, 0.07, 3.4]} material={woodMat} castShadow>
-          <boxGeometry args={[0.12, 0.12, 7.2]} />
-        </mesh>
+        <mesh geometry={pierWoodGeo} material={woodMat} castShadow receiveShadow />
 
         {[
-          [-1.0, 0.2],
-          [1.0, 0.2],
           [-1.0, 3.4],
           [1.0, 3.4],
           [-1.0, 6.8],
           [1.0, 6.8],
         ].map(([px, pz], idx) => (
-          <group key={`post_${idx}`} position={[px, 0.15, pz]}>
-            <mesh material={woodMat} castShadow>
-              <cylinderGeometry args={[0.08, 0.095, 1.15, 8]} />
+          <group key={`post_lantern_${idx}`} position={[px, 0.79, pz]}>
+            <mesh scale={[1, 1.18, 1]} castShadow>
+              <sphereGeometry args={[0.14, 10, 8]} />
+              <meshStandardMaterial
+                color={idx < 2 ? '#fff1f2' : '#fffbeb'}
+                emissive={idx < 2 ? '#f43f5e' : '#f6c56e'}
+                emissiveIntensity={1.55}
+                roughness={0.3}
+                toneMapped={false}
+              />
             </mesh>
-            {idx >= 4 && (
-              <group position={[0, 0.62, 0]}>
-                <mesh castShadow>
-                  <cylinderGeometry args={[0.11, 0.12, 0.2, 8]} />
-                  <meshStandardMaterial
-                    color="#fffbeb"
-                    emissive="#f6c56e"
-                    emissiveIntensity={0.75}
-                    roughness={0.3}
-                  />
-                </mesh>
-                <pointLight color="#fde68a" intensity={1.1} distance={6.5} />
-              </group>
-            )}
+            {idx >= 2 && <pointLight color="#fde68a" intensity={1.15} distance={7.5} />}
           </group>
         ))}
       </group>
@@ -435,7 +639,12 @@ export const ReflectiveLake: React.FC<{
           </mesh>
           <mesh position={[0, 0.18, -0.92]}>
             <sphereGeometry args={[0.052, 8, 8]} />
-            <meshStandardMaterial color="#fffbeb" emissive="#fbbf24" emissiveIntensity={0.95} />
+            <meshStandardMaterial
+              color="#fffbeb"
+              emissive="#fbbf24"
+              emissiveIntensity={1.65}
+              toneMapped={false}
+            />
           </mesh>
         </group>
       </Float>
@@ -456,7 +665,7 @@ export const ReflectiveLake: React.FC<{
         ))}
       </group>
 
-      {/* 7. Floating Candle Raft Pods Across Lake */}
+      {/* 7. Sculpted Multi-Petal Glowing Hoa Đăng Lotus Lanterns Across Lake (Merged Geometries + Shared Materials) */}
       {lanterns.map((lan, idx) => (
         <Float
           key={lan.id}
@@ -471,27 +680,12 @@ export const ReflectiveLake: React.FC<{
               onSelectLantern?.(lan.id);
             }}
           >
-            <mesh position={[0, -0.02, 0]} rotation-x={-Math.PI / 2}>
-              <ringGeometry args={[0.45, 0.65, 20]} />
-              <meshBasicMaterial color="#d8efe3" transparent opacity={0.22} depthWrite={false} />
-            </mesh>
-            <mesh receiveShadow castShadow>
-              <cylinderGeometry args={[0.42, 0.36, 0.09, 16]} />
-              <meshStandardMaterial color="#b28c62" roughness={0.85} metalness={0.04} />
-            </mesh>
-            <mesh position={[0, 0.04, 0]}>
-              <cylinderGeometry args={[0.28, 0.28, 0.04, 14]} />
-              <meshStandardMaterial color="#96724c" roughness={0.9} />
-            </mesh>
-            <mesh position={[0, 0.15, 0]} castShadow>
-              <sphereGeometry args={[0.15, 12, 10]} />
-              <meshStandardMaterial
-                color="#fffbeb"
-                emissive="#fde68a"
-                emissiveIntensity={1.0}
-                roughness={0.28}
-              />
-            </mesh>
+            <mesh geometry={lotusAssets.haloGeo} material={lotusAssets.haloMat} />
+            <mesh geometry={lotusAssets.padGeo} material={lotusAssets.padMat} />
+            <mesh geometry={lotusAssets.outerEvenGeo} material={lotusAssets.outerEvenMat} />
+            <mesh geometry={lotusAssets.outerOddGeo} material={lotusAssets.outerOddMat} />
+            <mesh geometry={lotusAssets.innerGeo} material={lotusAssets.innerMat} />
+            <mesh geometry={lotusAssets.coreGeo} material={lotusAssets.coreMat} />
           </group>
         </Float>
       ))}

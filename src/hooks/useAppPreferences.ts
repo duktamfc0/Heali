@@ -37,13 +37,13 @@ function loadPreferences(): AppPreferences {
     theme: 'light',
     lowMotion: detectSystemReducedMotion(),
     language: 'vi',
-    onboardingDone: false,
+    onboardingDone: true,
     onboardingNeed: null,
     difficultDates: [],
     analyticsOptOut: false,
     completedChallengeNights: [],
     lighterFeedbackAnsweredAt: null,
-    aiCompanionEnabled: false,
+    aiCompanionEnabled: true,
     aiConsentAccepted: false,
     preferOpenLicenseMusicOnly: false,
   };
@@ -55,7 +55,7 @@ function loadPreferences(): AppPreferences {
       theme: parsed.theme === 'dark' ? 'dark' : 'light',
       lowMotion: typeof parsed.lowMotion === 'boolean' ? parsed.lowMotion : defaultPrefs.lowMotion,
       language: parsed.language === 'en' ? 'en' : 'vi',
-      onboardingDone: Boolean(parsed.onboardingDone),
+      onboardingDone: typeof parsed.onboardingDone === 'boolean' ? parsed.onboardingDone : true,
       onboardingNeed: parsed.onboardingNeed ?? null,
       difficultDates: Array.isArray(parsed.difficultDates) ? parsed.difficultDates : [],
       analyticsOptOut: Boolean(parsed.analyticsOptOut),
@@ -64,7 +64,8 @@ function loadPreferences(): AppPreferences {
         : [],
       lighterFeedbackAnsweredAt:
         typeof parsed.lighterFeedbackAnsweredAt === 'string' ? parsed.lighterFeedbackAnsweredAt : null,
-      aiCompanionEnabled: Boolean(parsed.aiCompanionEnabled),
+      aiCompanionEnabled:
+        typeof parsed.aiCompanionEnabled === 'boolean' ? parsed.aiCompanionEnabled : true,
       aiConsentAccepted: Boolean(parsed.aiConsentAccepted),
       preferOpenLicenseMusicOnly: Boolean(parsed.preferOpenLicenseMusicOnly),
     };

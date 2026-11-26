@@ -25,6 +25,10 @@ import {
   HelpCircle,
   MessageCircle,
   X,
+  LayoutGrid,
+  Eye,
+  RotateCcw,
+  Smartphone,
 } from 'lucide-react';
 
 export interface WorldHUDProps {
@@ -40,22 +44,32 @@ export interface WorldHUDProps {
   onUpdateRobeColor: (color: number) => void;
   cameraMode: 'follow' | 'isometric' | 'cinematic';
   onChangeCameraMode: (mode: 'follow' | 'isometric' | 'cinematic') => void;
+  onResetCamera?: () => void;
   isZenMode: boolean;
   onToggleZenMode: () => void;
+  isMobileFrame?: boolean;
+  onToggleMobileFrame?: () => void;
   soundMuted: boolean;
   onToggleSound: () => void;
   onJoystickMove?: (dx: number, dy: number) => void;
   onJoystickEnd?: () => void;
+  onOpenAllFeatures?: () => void;
 }
 
 const ROBE_COLORS = [
-  { name: 'Xanh Rêu Rừng', hex: 0x2d7a58, preview: 'bg-[#2d7a58]' },
-  { name: 'Đất Nung Ấm', hex: 0xc25b3b, preview: 'bg-[#c25b3b]' },
-  { name: 'Vàng Mù Tạt', hex: 0xd9a43b, preview: 'bg-[#d9a43b]' },
-  { name: 'Xanh Sương Mai', hex: 0x5c8596, preview: 'bg-[#5c8596]' },
-  { name: 'Xanh Ô Liu', hex: 0x62733b, preview: 'bg-[#62733b]' },
-  { name: 'Kem Bạch Dương', hex: 0xd9d2c5, preview: 'bg-[#d9d2c5]' },
+  { name: 'Rêu Rừng', hex: 0x2d7a58, preview: 'bg-[#2d7a58]' },
+  { name: 'Đất Nung', hex: 0xb86642, preview: 'bg-[#b86642]' },
+  { name: 'Vàng Mù Tạt', hex: 0xc79238, preview: 'bg-[#c79238]' },
+  { name: 'Sương Mai', hex: 0x6b8f9c, preview: 'bg-[#6b8f9c]' },
+  { name: 'Ô Liu', hex: 0x5c7246, preview: 'bg-[#5c7246]' },
+  { name: 'Kem Bạch Dương', hex: 0xd9ccb8, preview: 'bg-[#d9ccb8]' },
 ];
+
+const GLASS_PANEL =
+  'bg-[#faf7ef]/92 backdrop-blur-md border border-[#cfd8c9] text-[#273829] shadow-lg';
+
+const GLASS_BTN =
+  'bg-[#faf7ef]/90 hover:bg-[#faf7ef] backdrop-blur-md border border-[#cfd8c9] text-[#273829] shadow-md transition';
 
 export const WorldHUD: React.FC<WorldHUDProps> = ({
   weatherMode = 'petals',
@@ -70,10 +84,14 @@ export const WorldHUD: React.FC<WorldHUDProps> = ({
   onUpdateRobeColor,
   cameraMode,
   onChangeCameraMode,
+  onResetCamera,
   isZenMode,
   onToggleZenMode,
+  isMobileFrame = false,
+  onToggleMobileFrame,
   onJoystickMove,
   onJoystickEnd,
+  onOpenAllFeatures,
 }) => {
   const [showMapModal, setShowMapModal] = useState(false);
   const [showCustomizer, setShowCustomizer] = useState(false);
@@ -81,7 +99,7 @@ export const WorldHUD: React.FC<WorldHUDProps> = ({
   const [showHelpTip, setShowHelpTip] = useState(false);
 
   const renderWeatherIcon = (mode: WeatherMode, active = false) => {
-    const cls = `w-4 h-4 ${active ? 'text-[#46613e]' : 'text-[#5c725e]'}`;
+    const cls = `w-4 h-4 ${active ? 'text-[#46613e]' : 'text-[#7a8b7c]'}`;
     switch (mode) {
       case 'petals':
         return <Flower2 className={cls} />;
@@ -97,7 +115,7 @@ export const WorldHUD: React.FC<WorldHUDProps> = ({
   };
 
   const getZoneIcon = (iconName: string, light = false) => {
-    const cls = light ? 'w-4 h-4 text-white' : 'w-4 h-4 text-[#46613e]';
+    const cls = light ? 'w-4 h-4 text-[#faf7ef]' : 'w-4 h-4 text-[#46613e]';
     switch (iconName) {
       case 'Waves':
         return <Waves className={cls} />;
@@ -135,8 +153,9 @@ export const WorldHUD: React.FC<WorldHUDProps> = ({
   if (isZenMode) {
     return (
       <button
+        type="button"
         onClick={onToggleZenMode}
-        className="absolute top-4 right-4 z-20 px-3.5 py-2 rounded-xl bg-[#f7f5ed]/95 border border-[#d5dbd0] text-[#273829] hover:bg-white text-xs font-medium flex items-center gap-1.5 shadow-md"
+        className={`absolute top-4 right-4 z-20 min-h-[44px] px-4 py-2 rounded-2xl ${GLASS_BTN} text-xs font-medium flex items-center gap-2`}
       >
         <Minimize2 className="w-4 h-4 text-[#46613e]" />
         <span>Hiện giao diện</span>
@@ -146,57 +165,71 @@ export const WorldHUD: React.FC<WorldHUDProps> = ({
 
   return (
     <>
-      {/* Top-Left Editorial Hero Block matching the serene garden mockup */}
-      <div className="absolute top-5 left-5 sm:top-7 sm:left-8 z-20 pointer-events-none max-w-xs sm:max-w-md space-y-2.5">
-        <div className="flex items-center gap-2 text-[11px] font-semibold tracking-widest uppercase text-[#4b6755]">
-          <span className="w-2 h-2 rounded-full bg-[#5b7e5f]" />
-          <span>Một khoảng thở cho tâm hồn</span>
-        </div>
+      {/* Top-Left Sanctuary Editorial Hero */}
+      <div
+        className={`absolute top-4 left-4 ${
+          isMobileFrame ? 'max-w-[235px] space-y-2' : 'sm:top-6 sm:left-7 max-w-[260px] sm:max-w-md space-y-2'
+        } z-20 pointer-events-none`}
+      >
+        <p className="text-[10px] sm:text-[11px] font-semibold tracking-[0.2em] uppercase text-[#f4f7f2] drop-shadow-[0_2px_6px_rgba(20,34,26,0.55)]">
+          Một khoảng thở cho tâm hồn
+        </p>
 
-        <h2 className="text-3xl sm:text-4xl font-semibold text-[#243627] font-serif-healing leading-tight tracking-tight">
+        <h2
+          className={`font-serif-healing ${
+            isMobileFrame ? 'text-2xl' : 'text-2xl sm:text-4xl'
+          } font-medium text-[#ffffff] leading-tight drop-shadow-[0_3px_14px_rgba(20,34,26,0.5)]`}
+        >
           Khu vườn bình yên
         </h2>
 
-        <p className="text-xs sm:text-sm text-[#395343] leading-relaxed max-w-[260px] sm:max-w-sm">
+        <p className="text-xs sm:text-sm text-[#f7f5ed] leading-relaxed drop-shadow-[0_2px_8px_rgba(20,34,26,0.5)]">
           Bạn không cần vội. Khu vườn vẫn ở đây, đợi bạn.
         </p>
 
-        <div className="pt-1 pointer-events-auto">
+        <div className="pt-1 pointer-events-auto flex flex-wrap items-center gap-2">
           <button
             type="button"
             onClick={() => setShowMapModal(true)}
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-[#f4f2ea]/92 hover:bg-white border border-[#cad5c6] text-[#273829] text-xs font-semibold shadow-sm transition cursor-pointer"
+            className={`min-h-[42px] inline-flex items-center gap-2 px-3.5 py-2 rounded-2xl ${GLASS_BTN} text-xs font-medium cursor-pointer whitespace-nowrap`}
           >
             <Compass className="w-4 h-4 text-[#46613e]" />
             <span>Các góc nhỏ</span>
           </button>
+
+          {onOpenAllFeatures && (
+            <button
+              type="button"
+              onClick={onOpenAllFeatures}
+              className="min-h-[42px] inline-flex items-center gap-1.5 px-3.5 py-2 rounded-2xl bg-[#46613e] hover:bg-[#3a5233] text-[#faf7ef] text-xs font-medium shadow-md transition cursor-pointer whitespace-nowrap"
+            >
+              <LayoutGrid className="w-3.5 h-3.5" />
+              <span>Tất cả chức năng</span>
+            </button>
+          )}
         </div>
       </div>
 
-      {/* Top-Right Compact Utilities (?, Weather, Customizer, Zen) */}
-      <div className="absolute top-5 right-5 sm:top-6 sm:right-6 z-20 flex items-center gap-1.5 sm:gap-2">
+      {/* Top-Right Floating Utility Controls */}
+      <div className="absolute top-4 right-4 sm:top-5 sm:right-5 z-20 flex flex-wrap justify-end items-center gap-1.5 max-w-[160px] sm:max-w-none">
         {onChangeWeatherMode && (
           <div className="relative">
             <button
               type="button"
               onClick={() => setShowWeatherMenu((prev) => !prev)}
               title="Thay đổi thời tiết khu vườn"
-              className="flex items-center gap-1.5 px-2.5 py-2 rounded-full bg-[#e6efe9]/95 hover:bg-white border border-[#cbd6ca] text-[#273829] text-xs font-medium shadow-sm transition"
+              className={`min-h-[42px] flex items-center gap-1.5 px-3 py-2 rounded-2xl ${GLASS_BTN} text-xs font-medium whitespace-nowrap`}
             >
               {renderWeatherIcon(weatherMode, true)}
-              <span className="hidden sm:inline">{activeWeatherOption.label}</span>
-              <ChevronDown className="w-3.5 h-3.5 text-[#5b705e]" />
+              {!isMobileFrame && <span className="hidden md:inline">{activeWeatherOption.label}</span>}
+              <ChevronDown className="w-3.5 h-3.5 text-[#546455]" />
             </button>
 
             {showWeatherMenu && (
-              <div className="absolute right-0 mt-2 w-60 rounded-2xl bg-[#faf7ef]/98 border border-[#d6dcd0] shadow-xl p-2 space-y-1 z-30">
-                <div className="px-2.5 py-1.5 border-b border-[#e6e4d8]">
-                  <p className="text-[11px] font-bold text-[#273829]">
-                    Khí Hậu Khu Vườn
-                  </p>
-                  <p className="text-[10px] text-[#5e7360]">
-                    Chọn bầu không khí nhẹ nhàng
-                  </p>
+              <div className="absolute right-0 mt-2 w-60 rounded-2xl bg-[#faf7ef]/98 backdrop-blur-md border border-[#cfd8c9] shadow-2xl p-2 space-y-1 z-30 text-[#273829]">
+                <div className="px-2.5 py-1.5 border-b border-[#e5e2d8]">
+                  <p className="text-[11px] font-semibold text-[#273829]">Thời Tiết Khu Vườn</p>
+                  <p className="text-[10px] text-[#7a8b7c]">Chọn bầu không khí nhẹ nhàng</p>
                 </div>
                 {WEATHER_OPTIONS.map((opt) => {
                   const isSelected = weatherMode === opt.id;
@@ -210,16 +243,14 @@ export const WorldHUD: React.FC<WorldHUDProps> = ({
                       }}
                       className={`w-full flex items-start gap-2.5 px-2.5 py-2 rounded-xl text-left transition ${
                         isSelected
-                          ? 'bg-[#e7eee2] border border-[#b4c4ae] text-[#273829]'
-                          : 'hover:bg-[#f1efe5] border border-transparent text-[#3d5240]'
+                          ? 'bg-[#e6efe3] border border-[#b9cbb6] text-[#273829]'
+                          : 'hover:bg-[#f1ede2] border border-transparent text-[#3b4a3e]'
                       }`}
                     >
                       <div className="mt-0.5">{renderWeatherIcon(opt.id, isSelected)}</div>
                       <div className="min-w-0">
-                        <div className="text-xs font-semibold">{opt.label}</div>
-                        <div className="text-[10px] text-[#5f7462] leading-snug">
-                          {opt.subtitle}
-                        </div>
+                        <div className="text-xs font-medium">{opt.label}</div>
+                        <div className="text-[10px] text-[#546455] leading-snug">{opt.subtitle}</div>
                       </div>
                     </button>
                   );
@@ -231,54 +262,110 @@ export const WorldHUD: React.FC<WorldHUDProps> = ({
 
         <button
           type="button"
+          onClick={() => {
+            const nextMode =
+              cameraMode === 'follow'
+                ? 'isometric'
+                : cameraMode === 'isometric'
+                  ? 'cinematic'
+                  : 'follow';
+            onChangeCameraMode(nextMode);
+          }}
+          title="Đổi góc nhìn camera"
+          className={`min-h-[42px] flex items-center gap-1.5 px-3 rounded-2xl ${GLASS_BTN} text-xs font-medium whitespace-nowrap`}
+        >
+          <Eye className="w-4 h-4 text-[#46613e]" />
+          {!isMobileFrame && (
+            <span className="hidden lg:inline">
+              {cameraMode === 'follow'
+                ? 'Góc gần'
+                : cameraMode === 'isometric'
+                  ? 'Toàn cảnh'
+                  : 'Quay chậm'}
+            </span>
+          )}
+        </button>
+
+        {onResetCamera && (
+          <button
+            type="button"
+            onClick={onResetCamera}
+            title="Đặt lại góc nhìn"
+            className={`w-[42px] h-[42px] rounded-2xl ${GLASS_BTN} flex items-center justify-center`}
+          >
+            <RotateCcw className="w-4 h-4 text-[#46613e]" />
+          </button>
+        )}
+
+        <button
+          type="button"
           onClick={() => setShowCustomizer(true)}
           title="Đổi màu áo nhân vật"
-          className="w-9 h-9 rounded-full bg-[#e6efe9]/95 hover:bg-white border border-[#cbd6ca] text-[#2c4230] flex items-center justify-center shadow-sm transition"
+          className={`w-[42px] h-[42px] rounded-2xl ${GLASS_BTN} flex items-center justify-center`}
         >
-          <Palette className="w-4 h-4" />
+          <Palette className="w-4 h-4 text-[#46613e]" />
         </button>
+
+        {onToggleMobileFrame && (
+          <button
+            type="button"
+            onClick={onToggleMobileFrame}
+            title={isMobileFrame ? 'Chế độ toàn màn hình' : 'Xem khung Mobile 9:16'}
+            className={`w-[42px] h-[42px] rounded-2xl flex items-center justify-center transition ${
+              isMobileFrame
+                ? 'bg-[#46613e] text-[#faf7ef] shadow-md'
+                : GLASS_BTN
+            }`}
+          >
+            <Smartphone className="w-4 h-4" />
+          </button>
+        )}
 
         <button
           type="button"
           onClick={onToggleZenMode}
           title="Chế độ tĩnh lặng toàn cảnh"
-          className="w-9 h-9 rounded-full bg-[#e6efe9]/95 hover:bg-white border border-[#cbd6ca] text-[#2c4230] flex items-center justify-center shadow-sm transition"
+          className={`w-[42px] h-[42px] rounded-2xl ${GLASS_BTN} flex items-center justify-center`}
         >
-          <Maximize2 className="w-4 h-4" />
+          <Maximize2 className="w-4 h-4 text-[#46613e]" />
         </button>
 
         <button
           type="button"
           onClick={() => setShowHelpTip((prev) => !prev)}
           title="Hướng dẫn di chuyển"
-          className="w-9 h-9 rounded-full bg-[#e6efe9]/95 hover:bg-white border border-[#cbd6ca] text-[#2c4230] flex items-center justify-center shadow-sm transition"
+          className={`w-[42px] h-[42px] rounded-2xl ${GLASS_BTN} flex items-center justify-center`}
         >
-          <HelpCircle className="w-4 h-4" />
+          <HelpCircle className="w-4 h-4 text-[#46613e]" />
         </button>
       </div>
 
       {/* Help Tooltip Popover */}
       {showHelpTip && (
-        <div className="absolute top-16 right-5 z-30 w-64 rounded-2xl bg-[#faf7ef]/98 border border-[#d6dcd0] shadow-xl p-3.5 text-xs text-[#273829] space-y-1.5">
+        <div className="absolute top-18 right-4 sm:right-5 z-30 w-64 rounded-2xl bg-[#faf7ef]/98 backdrop-blur-md border border-[#cfd8c9] shadow-2xl p-3.5 text-xs text-[#273829] space-y-1.5">
           <div className="flex items-center justify-between font-semibold">
             <span>Cách tản bộ trong vườn</span>
-            <button onClick={() => setShowHelpTip(false)} className="text-[#5c725e] hover:text-[#273829]">
+            <button
+              type="button"
+              onClick={() => setShowHelpTip(false)}
+              className="text-[#7a8b7c] hover:text-[#273829]"
+            >
               <X className="w-4 h-4" />
             </button>
           </div>
-          <p className="text-[11px] text-[#4c624e] leading-relaxed">
-            Dùng phím <strong>WASD</strong> / mũi tên, cụm phím <strong>↑ ← ↓ →</strong>, chạm lên thảm cỏ để bước tới từng ngôi nhà, hoặc <strong>kéo chuột</strong> để xoay góc nhìn thung lũng &amp; cuộn để thu phóng.
+          <p className="text-[11px] text-[#546455] leading-relaxed">
+            Dùng phím <strong>WASD</strong> / mũi tên, cụm phím <strong>↑ ← ↓ →</strong>, chạm lên thảm cỏ để bước tới từng ngôi nhà, hoặc <strong>kéo chuột mọi hướng</strong> để xoay góc nhìn và cuộn để thu phóng.
           </p>
-          <div className="pt-1.5 flex items-center gap-1 border-t border-[#e7e5da]">
+          <div className="pt-1.5 flex items-center gap-1 border-t border-[#e5e2d8]">
             {(['follow', 'isometric', 'cinematic'] as const).map((mode) => (
               <button
                 key={mode}
                 type="button"
                 onClick={() => onChangeCameraMode(mode)}
-                className={`flex-1 py-1 rounded-lg text-[10px] font-medium transition ${
+                className={`flex-1 py-1.5 rounded-xl text-[10px] font-medium transition ${
                   cameraMode === mode
-                    ? 'bg-[#46613e] text-white'
-                    : 'bg-[#edf0e6] text-[#3d5240] hover:bg-[#e1e7da]'
+                    ? 'bg-[#46613e] text-[#faf7ef]'
+                    : 'bg-[#f1ede2] text-[#3b4a3e] hover:bg-[#e7e2d3]'
                 }`}
               >
                 {mode === 'follow' ? 'Góc gần' : mode === 'isometric' ? 'Toàn cảnh' : 'Quay chậm'}
@@ -288,14 +375,22 @@ export const WorldHUD: React.FC<WorldHUDProps> = ({
         </div>
       )}
 
-      {/* Bottom Floating Cream Proximity Card (Exact match to "MỘT CÁNH CỬA ĐANG MỞ · Nhà nhật ký · Ghé vào nhà") */}
-      <div className="absolute bottom-24 sm:bottom-20 inset-x-4 sm:inset-x-auto sm:left-1/2 sm:-translate-x-1/2 z-20 sm:w-[460px] pointer-events-auto">
-        <div className="flex items-center justify-between gap-3 px-4 py-3.5 rounded-2xl bg-[#f7f5ed]/96 border border-[#dedcd0] shadow-xl">
+      {/* Bottom Floating Zone Proximity Card */}
+      <div
+        className={`absolute ${
+          isMobileFrame
+            ? 'bottom-28 inset-x-3.5'
+            : 'bottom-28 sm:bottom-20 md:bottom-5 inset-x-3.5 sm:inset-x-auto sm:left-1/2 sm:-translate-x-1/2 sm:w-[420px] lg:w-[460px]'
+        } z-20 pointer-events-auto`}
+      >
+        <div
+          className={`flex items-center justify-between gap-3 px-4 py-3 rounded-2xl ${GLASS_PANEL}`}
+        >
           <div className="min-w-0">
-            <p className="text-[10px] font-semibold uppercase tracking-wider text-[#6a7a68]">
+            <p className="text-[10px] font-semibold uppercase tracking-widest text-[#46613e]">
               {currentZone ? 'Điểm dừng chân gần bạn' : 'Một cánh cửa đang mở'}
             </p>
-            <h3 className="text-lg sm:text-xl font-semibold text-[#273829] font-serif-healing truncate mt-0.5">
+            <h3 className="font-serif-healing text-base sm:text-lg font-medium text-[#273829] truncate mt-0.5">
               {promptZone.name}
             </h3>
           </div>
@@ -303,7 +398,7 @@ export const WorldHUD: React.FC<WorldHUDProps> = ({
           <button
             type="button"
             onClick={() => onInteractZone(promptZone)}
-            className="shrink-0 flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#46613e] hover:bg-[#384f31] text-white text-xs font-semibold shadow-sm transition active:scale-95"
+            className="shrink-0 min-h-[42px] flex items-center gap-2 px-4 py-2 rounded-xl bg-[#46613e] hover:bg-[#3a5233] text-[#faf7ef] text-xs font-medium shadow-sm transition active:scale-95 whitespace-nowrap"
           >
             <span>{promptZone.promptText}</span>
             {getZoneIcon(promptZone.iconName, true)}
@@ -311,7 +406,7 @@ export const WorldHUD: React.FC<WorldHUDProps> = ({
         </div>
       </div>
 
-      {/* Bottom-Left Tactile Directional D-Pad (↑ ← ↓ →) */}
+      {/* Bottom-Left Directional D-Pad */}
       <div className="absolute bottom-4 left-4 sm:left-6 z-20 pointer-events-auto select-none">
         <div className="grid grid-cols-3 gap-1 w-[124px]">
           <div />
@@ -322,7 +417,7 @@ export const WorldHUD: React.FC<WorldHUDProps> = ({
             onPointerUp={stopMove}
             onPointerLeave={stopMove}
             onPointerCancel={stopMove}
-            className="w-10 h-10 rounded-xl bg-[#e6ece2]/92 hover:bg-white active:bg-[#d5dfd0] border border-[#cbd4c5] text-[#2b3f2d] flex items-center justify-center shadow-md transition"
+            className={`w-10 h-10 rounded-xl ${GLASS_BTN} flex items-center justify-center active:scale-95`}
           >
             <ArrowUp className="w-4 h-4" />
           </button>
@@ -335,7 +430,7 @@ export const WorldHUD: React.FC<WorldHUDProps> = ({
             onPointerUp={stopMove}
             onPointerLeave={stopMove}
             onPointerCancel={stopMove}
-            className="w-10 h-10 rounded-xl bg-[#e6ece2]/92 hover:bg-white active:bg-[#d5dfd0] border border-[#cbd4c5] text-[#2b3f2d] flex items-center justify-center shadow-md transition"
+            className={`w-10 h-10 rounded-xl ${GLASS_BTN} flex items-center justify-center active:scale-95`}
           >
             <ArrowLeft className="w-4 h-4" />
           </button>
@@ -346,7 +441,7 @@ export const WorldHUD: React.FC<WorldHUDProps> = ({
             onPointerUp={stopMove}
             onPointerLeave={stopMove}
             onPointerCancel={stopMove}
-            className="w-10 h-10 rounded-xl bg-[#e6ece2]/92 hover:bg-white active:bg-[#d5dfd0] border border-[#cbd4c5] text-[#2b3f2d] flex items-center justify-center shadow-md transition"
+            className={`w-10 h-10 rounded-xl ${GLASS_BTN} flex items-center justify-center active:scale-95`}
           >
             <ArrowDown className="w-4 h-4" />
           </button>
@@ -357,19 +452,19 @@ export const WorldHUD: React.FC<WorldHUDProps> = ({
             onPointerUp={stopMove}
             onPointerLeave={stopMove}
             onPointerCancel={stopMove}
-            className="w-10 h-10 rounded-xl bg-[#e6ece2]/92 hover:bg-white active:bg-[#d5dfd0] border border-[#cbd4c5] text-[#2b3f2d] flex items-center justify-center shadow-md transition"
+            className={`w-10 h-10 rounded-xl ${GLASS_BTN} flex items-center justify-center active:scale-95`}
           >
             <ArrowRight className="w-4 h-4" />
           </button>
         </div>
       </div>
 
-      {/* Bottom-Right Quick Write Journal Button ("Viết nhanh") */}
-      <div className="absolute bottom-6 right-4 sm:right-6 z-20 pointer-events-auto">
+      {/* Bottom-Right Quick Write Journal Button */}
+      <div className="absolute bottom-5 right-4 sm:right-6 z-20 pointer-events-auto">
         <button
           type="button"
           onClick={() => onQuickWriteJournal?.()}
-          className="flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-[#e7ece3]/95 hover:bg-white border border-[#cad4c4] text-[#273829] text-xs font-semibold shadow-md transition active:scale-95"
+          className={`min-h-[44px] flex items-center gap-2 px-4 py-2.5 rounded-2xl ${GLASS_BTN} text-xs font-medium active:scale-95 whitespace-nowrap`}
         >
           <BookOpen className="w-4 h-4 text-[#46613e]" />
           <span>Viết nhanh</span>
@@ -378,47 +473,45 @@ export const WorldHUD: React.FC<WorldHUDProps> = ({
 
       {/* Fast-Travel Map Modal ("Các góc nhỏ") */}
       {showMapModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#1c281e]/60">
-          <div className="relative w-full max-w-lg rounded-3xl bg-[#faf7ef] border border-[#dcdad0] shadow-2xl p-6 text-[#273829] space-y-4">
-            <div className="flex items-center justify-between pb-3 border-b border-[#e6e4d8]">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#1f2922]/45 backdrop-blur-sm">
+          <div className="relative w-full max-w-lg rounded-3xl bg-[#faf7ef] border border-[#cfd8c9] shadow-2xl p-6 text-[#273829] space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-[#e5e2d8]">
               <div className="flex items-center gap-2.5">
                 <Compass className="w-5 h-5 text-[#46613e]" />
-                <h3 className="font-bold text-base sm:text-lg font-serif-healing">
+                <h3 className="font-serif-healing font-medium text-base sm:text-lg">
                   Các góc nhỏ trong khu vườn
                 </h3>
               </div>
               <button
+                type="button"
                 onClick={() => setShowMapModal(false)}
-                className="p-1.5 rounded-lg text-[#5c725e] hover:text-[#273829]"
+                className="p-1.5 rounded-xl text-[#7a8b7c] hover:text-[#273829] hover:bg-[#f1ede2] transition"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            <p className="text-xs text-[#4f6451]">
-              Chọn một góc nhỏ bình yên để bước chân đến ngay lập tức.
+            <p className="text-xs text-[#546455]">
+              Chọn một góc nhỏ yên bình trên đảo trời xanh để bước chân đến ngay lập tức.
             </p>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 max-h-80 overflow-y-auto pr-1">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 max-h-72 overflow-y-auto pr-1">
               {allZones.map((z) => (
                 <button
                   key={z.id}
+                  type="button"
                   onClick={() => {
                     onTeleportToZone(z.id);
                     setShowMapModal(false);
                   }}
-                  className="flex items-start gap-3 p-3 rounded-2xl bg-[#f1efe5] hover:bg-[#e7ece1] border border-[#dfe2d5] hover:border-[#9eb198] text-left transition group"
+                  className="flex items-start gap-3 p-3 rounded-2xl bg-[#f1ede2]/75 hover:bg-[#e6efe3] border border-[#dce3d5] hover:border-[#b9cbb6] text-left transition group"
                 >
-                  <div className="p-2 rounded-xl bg-white border border-[#dce0d4] group-hover:scale-105 transition">
+                  <div className="p-2 rounded-xl bg-white border border-[#dce3d5] group-hover:scale-105 transition">
                     {getZoneIcon(z.iconName)}
                   </div>
-                  <div>
-                    <h4 className="text-xs font-bold text-[#273829]">
-                      {z.name}
-                    </h4>
-                    <p className="text-[11px] text-[#5c725e] line-clamp-1 mt-0.5">
-                      {z.subtitle}
-                    </p>
+                  <div className="min-w-0">
+                    <h4 className="text-xs font-semibold text-[#273829]">{z.name}</h4>
+                    <p className="text-[11px] text-[#546455] line-clamp-1 mt-0.5">{z.subtitle}</p>
                   </div>
                 </button>
               ))}
@@ -426,8 +519,9 @@ export const WorldHUD: React.FC<WorldHUDProps> = ({
 
             <div className="pt-2 flex justify-end">
               <button
+                type="button"
                 onClick={() => setShowMapModal(false)}
-                className="px-4 py-2 rounded-xl bg-[#e7ece1] hover:bg-[#dce4d4] text-xs font-semibold text-[#273829] transition"
+                className="min-h-[40px] px-4 py-2 rounded-xl bg-[#f1ede2] hover:bg-[#e7e2d3] border border-[#cfd8c9] text-xs font-medium text-[#273829] transition"
               >
                 Đóng
               </button>
@@ -438,23 +532,24 @@ export const WorldHUD: React.FC<WorldHUDProps> = ({
 
       {/* Avatar Color Customizer Modal */}
       {showCustomizer && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#1c281e]/60">
-          <div className="relative w-full max-w-sm rounded-3xl bg-[#faf7ef] border border-[#dcdad0] shadow-2xl p-6 text-[#273829] space-y-4">
-            <div className="flex items-center justify-between pb-3 border-b border-[#e6e4d8]">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#1f2922]/45 backdrop-blur-sm">
+          <div className="relative w-full max-w-sm rounded-3xl bg-[#faf7ef] border border-[#cfd8c9] shadow-2xl p-6 text-[#273829] space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-[#e5e2d8]">
               <div className="flex items-center gap-2">
                 <Palette className="w-5 h-5 text-[#46613e]" />
-                <h3 className="font-bold text-base font-serif-healing">Sắc áo dạo vườn</h3>
+                <h3 className="font-serif-healing font-medium text-base">Sắc áo dạo vườn</h3>
               </div>
               <button
+                type="button"
                 onClick={() => setShowCustomizer(false)}
-                className="p-1.5 rounded-lg text-[#5c725e] hover:text-[#273829]"
+                className="p-1.5 rounded-xl text-[#7a8b7c] hover:text-[#273829] hover:bg-[#f1ede2] transition"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            <p className="text-xs text-[#4f6451]">
-              Chọn màu áo dịu nhẹ đồng hành cùng bạn hôm nay.
+            <p className="text-xs text-[#546455]">
+              Chọn gam màu thiên nhiên nhẹ nhàng đồng hành cùng bạn hôm nay.
             </p>
 
             <div className="grid grid-cols-2 gap-2.5">
@@ -463,15 +558,16 @@ export const WorldHUD: React.FC<WorldHUDProps> = ({
                 return (
                   <button
                     key={col.hex}
+                    type="button"
                     onClick={() => onUpdateRobeColor(col.hex)}
                     className={`flex items-center gap-2.5 p-2.5 rounded-xl border text-left transition ${
                       isSelected
-                        ? 'bg-[#e7eee2] border-[#46613e] text-[#273829] font-semibold'
-                        : 'bg-[#f1efe5] border-[#dfe2d5] text-[#4c614e] hover:bg-[#e9ece1]'
+                        ? 'bg-[#e6efe3] border-[#46613e] text-[#273829] font-semibold'
+                        : 'bg-[#f1ede2]/65 border-[#dce3d5] text-[#3b4a3e] hover:bg-[#e7e2d3]'
                     }`}
                   >
                     <span
-                      className={`w-4 h-4 rounded-full border border-black/15 shadow-sm ${col.preview}`}
+                      className={`w-4 h-4 rounded-full border border-[#cfd8c9] shadow-sm ${col.preview}`}
                     />
                     <span className="text-xs">{col.name}</span>
                   </button>
@@ -481,8 +577,9 @@ export const WorldHUD: React.FC<WorldHUDProps> = ({
 
             <div className="pt-2 flex justify-end">
               <button
+                type="button"
                 onClick={() => setShowCustomizer(false)}
-                className="px-4 py-2 rounded-xl bg-[#46613e] hover:bg-[#384f31] text-xs font-semibold text-white transition"
+                className="min-h-[40px] px-4 py-2 rounded-xl bg-[#46613e] hover:bg-[#3a5233] text-xs font-medium text-[#faf7ef] transition"
               >
                 Hoàn tất
               </button>

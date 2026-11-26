@@ -1,6 +1,6 @@
 import React, { useRef, useEffect, useMemo } from 'react';
 import * as THREE from 'three';
-import { useGLTF, useAnimations } from '@react-three/drei';
+import { useGLTF, useAnimations, useTexture } from '@react-three/drei';
 
 // Preload valid GLB/GLTF models
 useGLTF.preload('/assets/3d/character/Soldier.glb');
@@ -13,12 +13,84 @@ useGLTF.preload('/assets/3d/furniture/DiffuseTransmissionPlant.glb');
 useGLTF.preload('/assets/3d/furniture/WoodenTable_01/WoodenTable_01.gltf');
 useGLTF.preload('/assets/3d/furniture/binder_notebook/binder_notebook.gltf');
 
+const WOOD_PBR_PATHS = [
+  '/assets/3d/textures/wood_planks_diff_1k.jpg',
+  '/assets/3d/textures/wood_planks_nor_1k.jpg',
+  '/assets/3d/textures/wood_planks_rough_1k.jpg',
+] as const;
+
+WOOD_PBR_PATHS.forEach((path) => useTexture.preload(path));
+
+export function useSharedWoodPBRTextures(): [THREE.Texture, THREE.Texture, THREE.Texture] {
+  const [woodDiff, woodNor, woodRough] = useTexture([...WOOD_PBR_PATHS]) as [
+    THREE.Texture,
+    THREE.Texture,
+    THREE.Texture,
+  ];
+
+  return useMemo(() => {
+    [woodDiff, woodNor, woodRough].forEach((tex) => {
+      if (tex.wrapS !== THREE.RepeatWrapping || tex.wrapT !== THREE.RepeatWrapping) {
+        tex.wrapS = THREE.RepeatWrapping;
+        tex.wrapT = THREE.RepeatWrapping;
+        tex.repeat.set(6, 5);
+        tex.anisotropy = 8;
+        tex.needsUpdate = true;
+      }
+    });
+    if (woodDiff.colorSpace !== THREE.SRGBColorSpace) {
+      woodDiff.colorSpace = THREE.SRGBColorSpace;
+      woodDiff.needsUpdate = true;
+    }
+    return [woodDiff, woodNor, woodRough];
+  }, [woodDiff, woodNor, woodRough]);
+}
+
+function useClonedGLTF(path: string, castShadow = true, receiveShadow = true): THREE.Group {
+  const { scene } = useGLTF(path);
+  return useMemo(() => {
+    const cloned = scene.clone(true);
+    const embeddedLights: THREE.Light[] = [];
+    cloned.traverse((obj) => {
+      if ((obj as THREE.Light).isLight) {
+        const light = obj as THREE.Light;
+        light.intensity = 0;
+        light.visible = false;
+        embeddedLights.push(light);
+        return;
+      }
+      if ((obj as THREE.Mesh).isMesh) {
+        const mesh = obj as THREE.Mesh;
+        mesh.castShadow = castShadow;
+        mesh.receiveShadow = receiveShadow;
+        const mats = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
+        const clonedMats = mats.map((m) => {
+          if (!m) return m;
+          const std = m as THREE.MeshStandardMaterial;
+          if (std.map && std.map.anisotropy < 8) {
+            std.map.anisotropy = 8;
+          }
+          if (std.emissive && std.emissiveIntensity !== undefined && std.emissiveIntensity > 0.45) {
+            const copy = std.clone();
+            copy.emissiveIntensity = 0.45;
+            return copy;
+          }
+          return m;
+        });
+        mesh.material = Array.isArray(mesh.material) ? clonedMats : clonedMats[0];
+      }
+    });
+    embeddedLights.forEach((l) => l.parent?.remove(l));
+    return cloned;
+  }, [scene, castShadow, receiveShadow]);
+}
+
 const sharedTreeBarkMat = new THREE.MeshStandardMaterial({ color: 0x6b4d37, roughness: 0.92 });
 const sharedTreeLeafDarkMat = new THREE.MeshStandardMaterial({ color: 0x3f7146, roughness: 0.84 });
 const sharedTreeLeafMidMat = new THREE.MeshStandardMaterial({ color: 0x548b51, roughness: 0.8 });
 const sharedTreeLeafSunMat = new THREE.MeshStandardMaterial({ color: 0x6ea35f, roughness: 0.78 });
 
-// 0. Lightweight Botanical Deciduous Tree (replaces broken 95MB external .bin reference)
+// 0. Lightweight Botanical Deciduous Tree
 export const RealBotanicalTree: React.FC<{
   position?: [number, number, number];
   rotationY?: number;
@@ -47,7 +119,6 @@ export const RealBotanicalTree: React.FC<{
 
   return (
     <group position={position} rotation-y={rotationY} scale={scale}>
-      {/* Tapered Trunk & Root Flare */}
       <mesh position={[0, 1.18, 0]} material={sharedTreeBarkMat} castShadow receiveShadow>
         <cylinderGeometry args={[0.16, 0.28, 2.36, 10]} />
       </mesh>
@@ -55,7 +126,6 @@ export const RealBotanicalTree: React.FC<{
         <cylinderGeometry args={[0.28, 0.42, 0.42, 10]} />
       </mesh>
 
-      {/* Limbs */}
       {branches.map((b, i) => (
         <mesh
           key={`br_${i}`}
@@ -68,7 +138,6 @@ export const RealBotanicalTree: React.FC<{
         </mesh>
       ))}
 
-      {/* Layered Botanical Foliage */}
       {canopyClusters.map((c, i) => {
         const mat =
           c.tier === 2
@@ -131,196 +200,107 @@ export const RealHumanoidAvatar: React.FC<{
   );
 };
 
-// 2. Real Rustic Wooden Writing Desk (Poly Haven CC0: WoodenTable_01)
-export const RealWritingDesk: React.FC<{
+interface FurnitureProps {
   position?: [number, number, number];
   rotationY?: number;
   scale?: number;
-}> = ({ position = [0, 0, 0], rotationY = 0, scale = 1.0 }) => {
-  const { scene } = useGLTF('/assets/3d/furniture/WoodenTable_01/WoodenTable_01.gltf');
+}
 
-  useEffect(() => {
-    if (scene) {
-      scene.traverse((obj) => {
-        if ((obj as THREE.Mesh).isMesh) {
-          obj.castShadow = true;
-          obj.receiveShadow = true;
-        }
-      });
-    }
-  }, [scene]);
+const DEFAULT_POS: [number, number, number] = [0, 0, 0];
 
-  return (
-    <group position={position} rotation-y={rotationY} scale={scale}>
-      <primitive object={scene.clone()} />
-    </group>
-  );
-};
+// 2. Real Rustic Wooden Writing Desk (Poly Haven CC0: WoodenTable_01)
+export const RealWritingDesk: React.FC<FurnitureProps> = React.memo(
+  ({ position = DEFAULT_POS, rotationY = 0, scale = 1.0 }) => {
+    const cloned = useClonedGLTF('/assets/3d/furniture/WoodenTable_01/WoodenTable_01.gltf', true, true);
+    return (
+      <group position={position} rotation-y={rotationY} scale={scale}>
+        <primitive object={cloned} />
+      </group>
+    );
+  }
+);
 
 // 3. Real 3D Journal Notebook (Poly Haven CC0: binder_notebook)
-export const RealJournalNotebook: React.FC<{
-  position?: [number, number, number];
-  rotationY?: number;
-  scale?: number;
-}> = ({ position = [0, 0, 0], rotationY = 0, scale = 1.2 }) => {
-  const { scene } = useGLTF('/assets/3d/furniture/binder_notebook/binder_notebook.gltf');
-
-  useEffect(() => {
-    if (scene) {
-      scene.traverse((obj) => {
-        if ((obj as THREE.Mesh).isMesh) {
-          obj.castShadow = true;
-          obj.receiveShadow = true;
-        }
-      });
-    }
-  }, [scene]);
-
-  return (
-    <group position={position} rotation-y={rotationY} scale={scale}>
-      <primitive object={scene.clone()} />
-    </group>
-  );
-};
+export const RealJournalNotebook: React.FC<FurnitureProps> = React.memo(
+  ({ position = DEFAULT_POS, rotationY = 0, scale = 1.2 }) => {
+    const cloned = useClonedGLTF('/assets/3d/furniture/binder_notebook/binder_notebook.gltf', true, true);
+    return (
+      <group position={position} rotation-y={rotationY} scale={scale}>
+        <primitive object={cloned} />
+      </group>
+    );
+  }
+);
 
 // 4. Real 3D Upholstered Sheen Armchair (Khronos CC0: SheenChair)
-export const RealSheenChair: React.FC<{
-  position?: [number, number, number];
-  rotationY?: number;
-  scale?: number;
-}> = ({ position = [0, 0, 0], rotationY = 0, scale = 1.4 }) => {
-  const { scene } = useGLTF('/assets/3d/furniture/SheenChair.glb');
-
-  useEffect(() => {
-    if (scene) {
-      scene.traverse((obj) => {
-        if ((obj as THREE.Mesh).isMesh) {
-          obj.castShadow = true;
-          obj.receiveShadow = true;
-        }
-      });
-    }
-  }, [scene]);
-
-  return (
-    <group position={position} rotation-y={rotationY} scale={scale}>
-      <primitive object={scene.clone()} />
-    </group>
-  );
-};
+export const RealSheenChair: React.FC<FurnitureProps> = React.memo(
+  ({ position = DEFAULT_POS, rotationY = 0, scale = 1.4 }) => {
+    const cloned = useClonedGLTF('/assets/3d/furniture/SheenChair.glb', true, true);
+    return (
+      <group position={position} rotation-y={rotationY} scale={scale}>
+        <primitive object={cloned} />
+      </group>
+    );
+  }
+);
 
 // 5. Real 3D Reading Lamp (Khronos CC0: LightsPunctualLamp)
-export const RealReadingLamp: React.FC<{
-  position?: [number, number, number];
-  rotationY?: number;
-  scale?: number;
-}> = ({ position = [0, 0, 0], rotationY = 0, scale = 0.28 }) => {
-  const { scene } = useGLTF('/assets/3d/furniture/LightsPunctualLamp.glb');
-
-  useEffect(() => {
-    if (scene) {
-      scene.traverse((obj) => {
-        if ((obj as THREE.Mesh).isMesh) {
-          obj.castShadow = true;
-        }
-      });
-    }
-  }, [scene]);
-
-  return (
-    <group position={position} rotation-y={rotationY} scale={scale}>
-      <primitive object={scene.clone()} />
-    </group>
-  );
-};
+export const RealReadingLamp: React.FC<FurnitureProps> = React.memo(
+  ({ position = DEFAULT_POS, rotationY = 0, scale = 0.28 }) => {
+    const cloned = useClonedGLTF('/assets/3d/furniture/LightsPunctualLamp.glb', true, false);
+    return (
+      <group position={position} rotation-y={rotationY} scale={scale}>
+        <primitive object={cloned} />
+      </group>
+    );
+  }
+);
 
 // 6. Real 3D Brass & Glass Lantern (Khronos CC0: Lantern)
-export const RealLantern: React.FC<{
-  position?: [number, number, number];
-  rotationY?: number;
-  scale?: number;
-}> = ({ position = [0, 0, 0], rotationY = 0, scale = 0.04 }) => {
-  const { scene } = useGLTF('/assets/3d/furniture/Lantern.glb');
-
-  useEffect(() => {
-    if (scene) {
-      scene.traverse((obj) => {
-        if ((obj as THREE.Mesh).isMesh) {
-          obj.castShadow = true;
-        }
-      });
-    }
-  }, [scene]);
-
-  return (
-    <group position={position} rotation-y={rotationY} scale={scale}>
-      <primitive object={scene.clone()} />
-    </group>
-  );
-};
+export const RealLantern: React.FC<FurnitureProps> = React.memo(
+  ({ position = DEFAULT_POS, rotationY = 0, scale = 0.04 }) => {
+    const cloned = useClonedGLTF('/assets/3d/furniture/Lantern.glb', true, false);
+    return (
+      <group position={position} rotation-y={rotationY} scale={scale}>
+        <primitive object={cloned} />
+      </group>
+    );
+  }
+);
 
 // 7. Real 3D Ceramic Tea Mug (Three.js CC0: coffeeMug)
-export const RealCoffeeMug: React.FC<{
-  position?: [number, number, number];
-  rotationY?: number;
-  scale?: number;
-}> = ({ position = [0, 0, 0], rotationY = 0, scale = 0.035 }) => {
-  const { scene } = useGLTF('/assets/3d/furniture/coffeeMug.glb');
-
-  useEffect(() => {
-    if (scene) {
-      scene.traverse((obj) => {
-        if ((obj as THREE.Mesh).isMesh) {
-          obj.castShadow = true;
-        }
-      });
-    }
-  }, [scene]);
-
-  return (
-    <group position={position} rotation-y={rotationY} scale={scale}>
-      <primitive object={scene.clone()} />
-    </group>
-  );
-};
+export const RealCoffeeMug: React.FC<FurnitureProps> = React.memo(
+  ({ position = DEFAULT_POS, rotationY = 0, scale = 0.035 }) => {
+    const cloned = useClonedGLTF('/assets/3d/furniture/coffeeMug.glb', true, false);
+    return (
+      <group position={position} rotation-y={rotationY} scale={scale}>
+        <primitive object={cloned} />
+      </group>
+    );
+  }
+);
 
 // 8. Real Botanical Plant (Khronos CC0: DiffuseTransmissionPlant)
-export const RealBotanicalPlant: React.FC<{
-  position?: [number, number, number];
-  rotationY?: number;
-  scale?: number;
-}> = ({ position = [0, 0, 0], rotationY = 0, scale = 0.55 }) => {
-  const { scene } = useGLTF('/assets/3d/furniture/DiffuseTransmissionPlant.glb');
-
-  useEffect(() => {
-    if (scene) {
-      scene.traverse((obj) => {
-        if ((obj as THREE.Mesh).isMesh) {
-          obj.castShadow = true;
-          obj.receiveShadow = true;
-        }
-      });
-    }
-  }, [scene]);
-
-  return (
-    <group position={position} rotation-y={rotationY} scale={scale}>
-      <primitive object={scene.clone()} />
-    </group>
-  );
-};
+export const RealBotanicalPlant: React.FC<FurnitureProps> = React.memo(
+  ({ position = DEFAULT_POS, rotationY = 0, scale = 0.55 }) => {
+    const cloned = useClonedGLTF('/assets/3d/furniture/DiffuseTransmissionPlant.glb', true, true);
+    return (
+      <group position={position} rotation-y={rotationY} scale={scale}>
+        <primitive object={cloned} />
+      </group>
+    );
+  }
+);
 
 // 9. Real 3D Flower (Three.js CC0: Flower)
-export const RealFlower: React.FC<{
-  position?: [number, number, number];
-  rotationY?: number;
-  scale?: number;
-}> = ({ position = [0, 0, 0], rotationY = 0, scale = 0.25 }) => {
-  const { scene } = useGLTF('/assets/3d/furniture/Flower.glb');
+export const RealFlower: React.FC<FurnitureProps> = React.memo(
+  ({ position = DEFAULT_POS, rotationY = 0, scale = 0.25 }) => {
+    const cloned = useClonedGLTF('/assets/3d/furniture/Flower.glb', false, false);
+    return (
+      <group position={position} rotation-y={rotationY} scale={scale}>
+        <primitive object={cloned} />
+      </group>
+    );
+  }
+);
 
-  return (
-    <group position={position} rotation-y={rotationY} scale={scale}>
-      <primitive object={scene.clone()} />
-    </group>
-  );
-};

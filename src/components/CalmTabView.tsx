@@ -10,6 +10,7 @@ import { VI_COPY } from '../i18n/vi';
 interface CalmTabViewProps {
   initialTool?: 'breathe' | 'grounding' | 'compassion' | 'reframe' | 'audio';
   lowMotion?: boolean;
+  embeddedIn3DRoom?: boolean;
   onOpenExUrgeModal: () => void;
 }
 
@@ -18,6 +19,7 @@ type BreathPhase = 'inhale' | 'hold' | 'exhale';
 export const CalmTabView: React.FC<CalmTabViewProps> = ({
   initialTool = 'breathe',
   lowMotion = false,
+  embeddedIn3DRoom = false,
   onOpenExUrgeModal,
 }) => {
   const [activeTool, setActiveTool] = useState<'breathe' | 'grounding' | 'compassion' | 'reframe' | 'audio'>(initialTool);
@@ -109,75 +111,114 @@ export const CalmTabView: React.FC<CalmTabViewProps> = ({
   return (
     <div className="space-y-5 text-[#273829] dark:text-[#edf2e8] heali-stage-enter">
       {/* Immersive 3D Calm Sanctuary Hero — Synced live to 4-7-8 breathPhase */}
-      <SanctuaryScene3D
-        variant="calm"
-        breathPhase={breathPhase}
-        breathRunning={breathRunning}
-        lowMotion={lowMotion}
-        dimmed={audioOnlyMode && activeTool === 'breathe'}
-        allowPureViewToggle
-        className="min-h-[250px] sm:min-h-[290px]"
-      >
-        <div className="p-5 sm:p-7 flex flex-col justify-between min-h-[250px] sm:min-h-[290px] text-[#f4f4ed]">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <span className="text-xs font-semibold uppercase tracking-widest text-[#9ce2c6]">
-              Góc Dịu Lại · Điều hoà nhịp thở 4-7-8
-            </span>
+      {embeddedIn3DRoom ? (
+        <div className="flex flex-wrap items-center justify-between gap-3 p-4 rounded-2xl bg-[#f1efe5] dark:bg-[#222c24] border border-[#dcdad0] dark:border-[#324236]">
+          <div className="space-y-0.5">
+            <div className="text-xs font-semibold uppercase tracking-wider text-[#46613e] dark:text-[#98c18e]">
+              {activeTool === 'breathe'
+                ? breathRunning
+                  ? `${phaseLabels[breathPhase].label} · ${phaseSecs}s`
+                  : 'Nhịp thở 4-7-8 cùng quả cầu lưu ly'
+                : VI_COPY.calmTools.heading}
+            </div>
+            <p className="text-xs text-[#576c59] dark:text-[#b0c0b2]">
+              {activeTool === 'breathe'
+                ? phaseLabels[breathPhase].guide
+                : VI_COPY.calmTools.subtitle}
+            </p>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            {activeTool === 'breathe' && (
+              <button
+                type="button"
+                onClick={toggleBreathWithSound}
+                className="min-h-[40px] px-4 py-1.5 rounded-xl bg-[#46613e] hover:bg-[#384f31] text-white text-xs font-semibold inline-flex items-center gap-1.5 shadow-sm transition"
+              >
+                {breathRunning ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5" />}
+                <span>{breathRunning ? 'Tạm dừng' : 'Bắt đầu thở'}</span>
+              </button>
+            )}
             <button
               type="button"
               onClick={onOpenExUrgeModal}
-              className="min-h-[40px] px-3.5 py-1.5 rounded-xl bg-[#16231b]/85 hover:bg-[#1f3327] border border-[#567460]/60 text-xs sm:text-sm font-semibold text-[#f3ead6] inline-flex items-center gap-1.5 transition whitespace-nowrap"
+              className="min-h-[40px] px-3 py-1.5 rounded-xl bg-[#faf7ef] dark:bg-[#19211b] border border-[#cfd5c6] dark:border-[#37473a] text-xs font-semibold text-[#5b412c] dark:text-[#e6c9ad] inline-flex items-center gap-1.5"
             >
-              <Clock className="w-4 h-4 text-[#f4cb77]" />
+              <Clock className="w-3.5 h-3.5" />
               <span>{VI_COPY.exUrge.buttonLabel}</span>
             </button>
           </div>
-
-          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 pt-6">
-            <div className="space-y-1.5 max-w-xl">
-              <h1 className="text-2xl sm:text-3xl font-bold font-serif-healing text-white">
-                {activeTool === 'breathe'
-                  ? breathRunning
-                    ? `${phaseLabels[breathPhase].label} · ${phaseSecs}s`
-                    : 'Thả lỏng cơ thể cùng quả cầu lưu ly'
-                  : VI_COPY.calmTools.heading}
-              </h1>
-              <p className="text-xs sm:text-sm text-[#d4e2dc]">
-                {activeTool === 'breathe'
-                  ? breathRunning
-                    ? phaseLabels[breathPhase].guide
-                    : 'Quả cầu ánh sáng 3D sẽ phồng mở và xẹp xuống nhịp nhàng cùng hơi thở của bạn.'
-                  : VI_COPY.calmTools.subtitle}
-              </p>
+        </div>
+      ) : (
+        <SanctuaryScene3D
+          variant="calm"
+          breathPhase={breathPhase}
+          breathRunning={breathRunning}
+          lowMotion={lowMotion}
+          dimmed={audioOnlyMode && activeTool === 'breathe'}
+          allowPureViewToggle
+          className="min-h-[250px] sm:min-h-[290px]"
+        >
+          <div className="p-5 sm:p-7 flex flex-col justify-between min-h-[250px] sm:min-h-[290px] text-[#f4f4ed]">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <span className="text-xs font-semibold uppercase tracking-widest text-[#9ce2c6]">
+                Góc Dịu Lại · Điều hoà nhịp thở 4-7-8
+              </span>
+              <button
+                type="button"
+                onClick={onOpenExUrgeModal}
+                className="min-h-[40px] px-3.5 py-1.5 rounded-xl bg-[#16231b]/85 hover:bg-[#1f3327] border border-[#567460]/60 text-xs sm:text-sm font-semibold text-[#f3ead6] inline-flex items-center gap-1.5 transition whitespace-nowrap"
+              >
+                <Clock className="w-4 h-4 text-[#f4cb77]" />
+                <span>{VI_COPY.exUrge.buttonLabel}</span>
+              </button>
             </div>
 
-            {activeTool === 'breathe' && (
-              <div className="flex items-center gap-2 shrink-0">
-                <button
-                  type="button"
-                  onClick={toggleBreathWithSound}
-                  className="min-h-[46px] px-5 py-2.5 rounded-xl bg-[#4f7c5c] hover:bg-[#3f674a] text-white text-sm font-semibold inline-flex items-center gap-2 transition shadow-md"
-                >
-                  {breathRunning ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
-                  <span>{breathRunning ? 'Tạm dừng' : 'Bắt đầu thở'}</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setBreathRunning(false);
-                    setBreathPhase('inhale');
-                    setPhaseSecs(4);
-                    setTotalElapsedSecs(0);
-                  }}
-                  className="min-h-[46px] px-3.5 py-2 rounded-xl bg-[#16231b]/85 border border-[#4e6d57]/60 text-xs sm:text-sm font-medium text-[#e4ece7]"
-                >
-                  Đặt lại
-                </button>
+            <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 pt-6">
+              <div className="space-y-1.5 max-w-xl">
+                <h1 className="text-2xl sm:text-3xl font-bold font-serif-healing text-white">
+                  {activeTool === 'breathe'
+                    ? breathRunning
+                      ? `${phaseLabels[breathPhase].label} · ${phaseSecs}s`
+                      : 'Thả lỏng cơ thể cùng quả cầu lưu ly'
+                    : VI_COPY.calmTools.heading}
+                </h1>
+                <p className="text-xs sm:text-sm text-[#d4e2dc]">
+                  {activeTool === 'breathe'
+                    ? breathRunning
+                      ? phaseLabels[breathPhase].guide
+                      : 'Quả cầu ánh sáng 3D sẽ phồng mở và xẹp xuống nhịp nhàng cùng hơi thở của bạn.'
+                    : VI_COPY.calmTools.subtitle}
+                </p>
               </div>
-            )}
+
+              {activeTool === 'breathe' && (
+                <div className="flex items-center gap-2 shrink-0">
+                  <button
+                    type="button"
+                    onClick={toggleBreathWithSound}
+                    className="min-h-[46px] px-5 py-2.5 rounded-xl bg-[#4f7c5c] hover:bg-[#3f674a] text-white text-sm font-semibold inline-flex items-center gap-2 transition shadow-md"
+                  >
+                    {breathRunning ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
+                    <span>{breathRunning ? 'Tạm dừng' : 'Bắt đầu thở'}</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setBreathRunning(false);
+                      setBreathPhase('inhale');
+                      setPhaseSecs(4);
+                      setTotalElapsedSecs(0);
+                    }}
+                    className="min-h-[46px] px-3.5 py-2 rounded-xl bg-[#16231b]/85 border border-[#4e6d57]/60 text-xs sm:text-sm font-medium text-[#e4ece7]"
+                  >
+                    Đặt lại
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
-        </div>
-      </SanctuaryScene3D>
+        </SanctuaryScene3D>
+      )}
 
       {/* Segmented Tool Selector */}
       <div className="flex flex-wrap items-center gap-2 p-1.5 rounded-2xl bg-[#ebe9dd] dark:bg-[#1b241d] border border-[#dcdad0] dark:border-[#324236]">
